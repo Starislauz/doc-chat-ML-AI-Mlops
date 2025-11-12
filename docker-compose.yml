@@ -1,0 +1,121 @@
+# ===========================================
+# RAG Document Chat - Docker Compose
+# Production-Ready Configuration
+# ===========================================
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Backend Service (FastAPI + AI/ML)
+  # ===========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: doc-chat-backend
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "8000:8000"
+    environment:
+      # API Keys
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-${GEMINI_API_KEY}}
+      # App Settings
+      - DEBUG=${DEBUG:-false}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-10080}
+      # Model Settings
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      # CORS
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      # Redis Cache
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_ENABLED=true
+    env_file:
+      - .env
+    volumes:
+      # Persist user data
+      - backend-uploads:/app/uploads
+      - backend-images:/app/images
+      - backend-chroma:/app/backend/chroma_db
+      - backend-users:/app/backend
+    restart: unless-stopped
+    networks:
+      - doc-chat-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # Frontend Service (Nginx)
+  # ===========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: doc-chat-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - doc-chat-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===========================================
+  # Redis Service (Caching)
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: doc-chat-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - doc-chat-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  doc-chat-network:
+    driver: bridge
+    name: doc-chat-network
+
+# ===========================================
+# Volumes (Data Persistence)
+# ===========================================
+volumes:
+  backend-uploads:
+    name: doc-chat-uploads
+    driver: local
+  backend-images:
+    name: doc-chat-images
+    driver: local
+  backend-chroma:
+    name: doc-chat-chroma
+    driver: local
+  backend-users:
+    name: doc-chat-users
+    driver: local

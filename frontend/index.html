@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="author" content="Anthony Njoku">
+    <meta name="description" content="AI/ML Engineer & MLops Specialist - Intelligent Document Processing System">
+    <title>RAG Document Chat - AI-Powered Document Assistant</title>
+    <link rel="stylesheet" href="/static/css/styles.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal active">
+        <div class="modal-content glass">
+            <div class="auth-header">
+                <h1 class="gradient-text" id="authAppTitle">🤖 RAG Document Chat</h1>
+                <p id="authAppSubtitle">Your AI-Powered Document Assistant</p>
+                <div class="auth-branding">
+                    <small>Created by <strong id="authAppAuthor">Anthony Njoku</strong></small>
+                </div>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Login</button>
+                <button class="auth-tab" data-tab="register">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Username</label>
+                    <input type="text" id="registerUsername" placeholder="Choose username" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="registerEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="registerPassword" placeholder="Choose password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+                <div id="registerError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="app-container">
+        <!-- Mobile Menu Button -->
+        <button id="mobileMenuBtn" class="mobile-menu-btn" style="display: none;">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar glass" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="gradient-text">📚 Documents</h2>
+                <button id="uploadBtn" class="btn btn-small" title="Upload Document">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchDocs" placeholder="Search documents...">
+            </div>
+
+            <div id="documentList" class="document-list">
+                <div class="loading">Loading documents...</div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <div>
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-email" id="userEmail">email@example.com</div>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="btn btn-small btn-danger" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+            
+            <!-- Footer Branding -->
+            <div class="sidebar-branding">
+                <div class="branding-info">
+                    <small>Powered by</small>
+                    <strong id="footerAuthor">Anthony Njoku</strong>
+                </div>
+                <div class="branding-links">
+                    <a id="brandingLinkedIn" href="https://www.linkedin.com/in/anthony-emeka-6227782a1/" target="_blank" title="LinkedIn">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    <a id="brandingGitHub" href="https://github.com/starislauz" target="_blank" title="GitHub">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a id="brandingPortfolio" href="https://starislauz.github.io/myportfolio.com/" target="_blank" title="Portfolio">
+                        <i class="fas fa-globe"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Chat Header -->
+            <header class="chat-header glass">
+                <div class="chat-info">
+                    <h2 id="chatTitle">💬 AI Assistant</h2>
+                    <p id="chatSubtitle">Ask questions about your documents</p>
+                </div>
+                <div class="header-actions">
+                    <button id="aboutBtn" class="btn btn-small" title="About">
+                        <i class="fas fa-info-circle"></i> About
+                    </button>
+                    <button id="newChatBtn" class="btn btn-small" title="New Chat">
+                        <i class="fas fa-plus"></i> New Chat
+                    </button>
+                    <button id="themeToggle" class="btn btn-small btn-icon" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="settingsBtn" class="btn btn-small btn-icon" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Messages -->
+            <div id="chatMessages" class="chat-messages">
+                <div class="welcome-message">
+                    <div class="welcome-icon">🤖</div>
+                    <h2 id="welcomeTitle">Welcome to RAG Document Chat!</h2>
+                    <p id="welcomeSubtitle">Upload documents and ask questions about them. I'll help you find answers using AI.</p>
+                    <div class="welcome-branding">
+                        <p><strong id="welcomeAuthor">Anthony Njoku</strong></p>
+                        <p id="welcomeTagline" class="text-muted">AI-Powered Document Intelligence</p>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="quick-action" onclick="document.getElementById('uploadBtn').click()">
+                            <i class="fas fa-upload"></i>
+                            Upload Document
+                        </button>
+                        <button class="quick-action" onclick="sendSampleQuestion()">
+                            <i class="fas fa-question-circle"></i>
+                            Try Sample Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container glass">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Ask a question about your documents..." 
+                        rows="1"
+                    ></textarea>
+                    <div class="input-actions">
+                        <button id="attachBtn" class="btn btn-icon" title="Attach File">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button id="sendBtn" class="btn btn-primary" title="Send Message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button id="stopBtn" class="btn btn-danger" title="Stop" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-hint">
+                    Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2><i class="fas fa-upload"></i> Upload Document</h2>
+                <button class="modal-close" onclick="closeUploadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>Drag & Drop your documents or images here</h3>
+                <p>or click to browse</p>
+                <p class="upload-hint">Supported: PDF, DOCX, TXT, PNG, JPG (Max 5 files, 10MB each)</p>
+                <input type="file" id="fileInput" accept=".pdf,.txt,.md,.docx,.doc,.png,.jpg,.jpeg,.bmp,.tiff,.tif" hidden>
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-folder-open"></i> Select Files
+                </button>
+            </div>
+            
+            <div id="filePreview" style="display: none;">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Selected Files</h4>
+                <div id="previewList"></div>
+            </div>
+
+            <div id="uploadProgress" class="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p id="uploadStatus">Uploading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+    
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> About</h2>
+                <button class="modal-close" onclick="closeAboutModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="about-content">
+                <div class="about-section">
+                    <h3 id="aboutAppTitle">RAG Document Chat</h3>
+                    <p id="aboutAppTagline" class="text-muted">AI-Powered Document Intelligence</p>
+                    <p id="aboutAppVersion" class="text-muted">Version 1.0.0</p>
+                </div>
+                
+                <div class="about-section">
+                    <h4>👨‍💻 Created By</h4>
+                    <div class="author-card">
+                        <div class="author-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="author-info">
+                            <h3 id="aboutAuthorName">Anthony Njoku</h3>
+                            <p id="aboutAuthorBio">AI/ML and MLops Engineer specializing in intelligent systems, backend architecture, and production-ready machine learning solutions.</p>
+                            <div class="author-links">
+                                <a id="aboutLinkedIn" href="https://www.linkedin.com/in/anthony-emeka-6227782a1/" target="_blank">
+                                    <i class="fab fa-linkedin"></i> LinkedIn
+                                </a>
+                                <a id="aboutGitHub" href="https://github.com/starislauz" target="_blank">
+                                    <i class="fab fa-github"></i> GitHub
+                                </a>
+                                <a id="aboutPortfolio" href="https://starislauz.github.io/myportfolio.com/" target="_blank">
+                                    <i class="fas fa-globe"></i> Portfolio
+                                </a>
+                                <a id="aboutEmail" href="#" style="display: none;">
+                                    <i class="fas fa-envelope"></i> Email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="about-section">
+                    <h4>🎯 Expertise Areas</h4>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> <strong>AI/ML Engineering:</strong> Building intelligent systems with deep learning and NLP</li>
+                        <li><i class="fas fa-check-circle"></i> <strong>MLops:</strong> Production-ready ML pipelines and model deployment</li>
+                        <li><i class="fas fa-check-circle"></i> <strong>Backend Architecture:</strong> Scalable APIs and microservices design</li>
+                        <li><i class="fas fa-check-circle"></i> <strong>Document Processing:</strong> Advanced RAG systems and information extraction</li>
+                        <li><i class="fas fa-check-circle"></i> <strong>Cloud Infrastructure:</strong> Deployment and scaling on cloud platforms</li>
+                    </ul>
+                </div>
+                
+                <div class="about-section">
+                    <h4>✨ System Features</h4>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-file-pdf"></i> Multi-format document support (PDF, DOCX, TXT)</li>
+                        <li><i class="fas fa-image"></i> Scanned PDF processing with AI OCR</li>
+                        <li><i class="fas fa-eye"></i> Image recognition and analysis</li>
+                        <li><i class="fas fa-brain"></i> Context-aware responses using RAG</li>
+                        <li><i class="fas fa-volume-up"></i> Text-to-speech support</li>
+                        <li><i class="fas fa-mobile-alt"></i> Responsive mobile design</li>
+                    </ul>
+                </div>
+                
+                <div class="about-section">
+                    <h4>🔧 Technology Stack</h4>
+                    <div class="tech-badges">
+                        <span class="badge">Python</span>
+                        <span class="badge">FastAPI</span>
+                        <span class="badge">Google Gemini AI</span>
+                        <span class="badge">ChromaDB</span>
+                        <span class="badge">PyTorch/TensorFlow</span>
+                        <span class="badge">Docker</span>
+                        <span class="badge">JavaScript</span>
+                        <span class="badge">REST APIs</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/api.js?v=2.0"></script>
+    <script src="/static/js/auth.js?v=2.0"></script>
+    <script src="/static/js/chat.js?v=2.0"></script>
+    <script src="/static/js/documents.js?v=2.0"></script>
+    <script src="/static/js/app.js?v=2.0"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+# ===========================================
+# RAG Document Chat - Development Mode
+# Docker Compose for Local Development
+# ===========================================
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Backend Service (Development Mode)
+  # ===========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: doc-chat-backend-dev
+    ports:
+      - "8000:8000"
+    environment:
+      # API Keys
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-${GEMINI_API_KEY}}
+      # Development Settings
+      - DEBUG=true
+      - SECRET_KEY=${SECRET_KEY}
+      # Model Settings
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+    env_file:
+      - .env
+    volumes:
+      # Mount code for hot reload
+      - ./backend:/app:ro
+      # Persist data
+      - backend-uploads-dev:/app/uploads
+      - backend-images-dev:/app/images
+      - backend-chroma-dev:/app/backend/chroma_db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - doc-chat-network-dev
+
+  # ===========================================
+  # Frontend Service (Development Mode)
+  # ===========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: doc-chat-frontend-dev
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount frontend for live changes
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - doc-chat-network-dev
+
+networks:
+  doc-chat-network-dev:
+    driver: bridge
+    name: doc-chat-network-dev
+
+volumes:
+  backend-uploads-dev:
+    name: doc-chat-uploads-dev
+  backend-images-dev:
+    name: doc-chat-images-dev
+  backend-chroma-dev:
+    name: doc-chat-chroma-dev

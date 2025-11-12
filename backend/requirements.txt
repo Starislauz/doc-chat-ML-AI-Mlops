@@ -1,0 +1,61 @@
+# FastAPI Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+
+# Database
+chromadb
+
+
+
+# AI & ML
+google-generativeai
+
+# PyTorch CPU-ONLY (NO CUDA!) - This forces the small download!
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+
+# Sentence transformers (after torch)
+sentence-transformers
+
+# Document Processing
+PyPDF2
+python-docx
+pypdf
+pdfplumber
+pdf2image
+
+# Image Processing
+Pillow
+pytesseract
+
+# Text Processing
+langchain
+langchain-community
+
+# Utilities
+pydantic
+pydantic-settings
+python-dotenv
+
+# CORS & Middleware (The fix for the typo)
+flask-cors
+
+# Logging
+loguru
+
+# HTTP Client (The fix for the h2/http2 error)
+httpx[http2]
+requests
+
+# Email Validation (The final missing piece)
+email-validator
+
+# Type Checking
+typing-extensions
