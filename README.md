@@ -1,4 +1,4 @@
-# Doc-Chat — a document RAG that says "I don't know"
+**"Doc-Chat — RAG over your documents, honestly measured"**
 
 A retrieval-augmented chat app that answers questions **only** from the documents you upload — and refuses honestly when the answer isn't in them.
 
