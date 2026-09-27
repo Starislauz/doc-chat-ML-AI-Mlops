@@ -15,16 +15,53 @@ class EnhancedRAG:
     def __init__(self):
         """Initialize enhanced RAG"""
         self.reranker = None
+        self.reranker_load_failures = 0
         logger.info("EnhancedRAG initialized (lazy loading)")
     
     def load_reranker(self):
-        """Load cross-encoder model for re-ranking"""
+        """Load the cross-encoder re-ranking model.
+
+        Offline-first: a cached model loads without any network call, so a
+        DNS blip cannot break a request. If loading fails, the service keeps
+        working without re-ranking instead of raising a 500.
+        """
         if self.reranker is not None:
+            return
+        if self.reranker_load_failures >= 3:
+            logger.warning("Re-ranker disabled after repeated load failures")
             return
         
         logger.info(f"Loading re-ranker model: {settings.rerank_model}")
-        self.reranker = CrossEncoder(settings.rerank_model)
+        try:
+            self.reranker = CrossEncoder(
+                settings.rerank_model, local_files_only=True
+            )
+        except KeyboardInterrupt:
+            raise
+        except Exception as local_error:
+            logger.warning(
+                f"Re-ranker not in local cache ({local_error}); downloading..."
+            )
+            try:
+                self.reranker = CrossEncoder(settings.rerank_model)
+            except KeyboardInterrupt:
+                raise
+            except Exception as download_error:
+                self.reranker_load_failures += 1
+                logger.error(
+                    f"Could not load re-ranker ({download_error}). "
+                    f"Continuing WITHOUT re-ranking - retrieval order will be used."
+                )
+                self.reranker = None
+                return
+        
+        self.reranker_load_failures = 0
         logger.info("Re-ranker model loaded successfully")
+    
+    @property
+    def reranker_available(self) -> bool:
+        """True when scores from the last rerank pass are cross-encoder scores."""
+        return self.reranker is not None
     
     def rerank_results(
         self,
@@ -47,6 +84,12 @@ class EnhancedRAG:
             return results
         
         self.load_reranker()
+        
+        # No re-ranker (e.g. model not downloadable): degrade gracefully by
+        # keeping the retrieval order instead of failing the request.
+        if self.reranker is None:
+            logger.warning("Re-ranker unavailable - using retrieval order")
+            return results[:top_k] if top_k else results
         
         logger.info(f"Re-ranking {len(results)} results")
         
@@ -72,6 +115,52 @@ class EnhancedRAG:
         
         logger.info(f"Re-ranked results, kept top {len(reranked)}")
         return reranked
+    
+    def apply_relevance_cutoff(
+        self,
+        results: List[Dict],
+        threshold: float,
+        max_chunks: int,
+        score_key: str = "relevance_score"
+    ) -> List[Dict]:
+        """
+        Drop chunks that score below the relevance threshold.
+
+        Barely-relevant chunks are the main source of hallucination: if the
+        LLM sees them it will try to use them. If nothing clears the bar an
+        empty list is returned and the caller must abstain.
+
+        Args:
+            results: Candidate chunks (any order).
+            threshold: Minimum score (inclusive) for a chunk to be kept, or
+                None to disable the score cutoff (rank order is then used).
+            max_chunks: Hard cap on how many chunks to keep.
+            score_key: Which score field to compare ('relevance_score',
+                'rerank_score', or 'weighted_score').
+
+        Returns:
+            Chunks at/above threshold, best first, capped at max_chunks.
+        """
+        if not results:
+            return []
+        
+        if threshold is None:
+            # No score cutoff: cross-encoder logits are uncalibrated, so rank
+            # order decides. Honesty is enforced by the prompt, which abstains
+            # when the context does not contain the answer.
+            ordered = sorted(
+                results,
+                key=lambda r: r.get(score_key) if r.get(score_key) is not None else 0.0,
+                reverse=True
+            )
+            return ordered[:max_chunks]
+        
+        above = [
+            r for r in results
+            if r.get(score_key) is not None and r[score_key] >= threshold
+        ]
+        above.sort(key=lambda r: r.get(score_key, 0.0), reverse=True)
+        return above[:max_chunks]
     
     def generate_query_variations(self, query: str) -> List[str]:
         """

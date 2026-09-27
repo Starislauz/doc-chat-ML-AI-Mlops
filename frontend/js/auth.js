@@ -6,7 +6,41 @@ document.addEventListener('DOMContentLoaded', () => {
     testBackendConnection();
     initAuth();
     setupPageCloseCleanup();
+
+    // The API client fires this when an authenticated request is rejected
+    window.addEventListener('auth:expired', handleSessionExpired);
 });
+
+let sessionExpiryHandled = false;
+
+/**
+ * The stored token was rejected by the server (expired, revoked, restarted
+ * with a new SECRET_KEY). Send the user back to the login screen with a clear
+ * explanation instead of leaving them stuck on failing requests.
+ */
+function handleSessionExpired() {
+    if (sessionExpiryHandled) return;
+    sessionExpiryHandled = true;
+
+    api.clearToken();
+    currentUser = null;
+    showAuthModal();
+
+    const errorEl = document.getElementById('loginError');
+    if (errorEl) {
+        errorEl.textContent = 'Your session expired, so you were signed out. Please log in again.';
+        errorEl.classList.add('active');
+    }
+
+    showToast(
+        'Signed out',
+        'Your session expired for security. Please log in again - nothing was lost.',
+        'warning',
+        7000
+    );
+
+    setTimeout(() => { sessionExpiryHandled = false; }, 3000);
+}
 
 async function testBackendConnection() {
     try {
@@ -21,7 +55,7 @@ async function testBackendConnection() {
         setTimeout(() => {
             const errorDiv = document.getElementById('loginError') || document.getElementById('registerError');
             if (errorDiv && !api.getToken()) {
-                errorDiv.textContent = '⚠️ Unable to connect to server. Please refresh the page or contact support.';
+                errorDiv.textContent = 'Unable to connect to server. Please refresh the page or contact support.';
                 errorDiv.classList.add('active');
             }
         }, 1000);
@@ -115,16 +149,8 @@ async function handleLogin(e) {
         
     } catch (error) {
         console.error('Login error:', error);
-        let errorMessage = error.message;
-        
-        // Provide helpful error messages
-        if (errorMessage.includes('JSON')) {
-            errorMessage = 'Unable to connect to server. Please make sure the backend is running.';
-        } else if (errorMessage.includes('Failed to fetch')) {
-            errorMessage = 'Network error. Please check your connection and try again.';
-        }
-        
-        errorEl.textContent = errorMessage;
+        const info = APIClient.friendlyError(error);
+        errorEl.textContent = info.hint ? `${info.message}\n${info.hint}` : info.message;
         errorEl.classList.add('active');
     }
 }
@@ -151,16 +177,8 @@ async function handleRegister(e) {
         
     } catch (error) {
         console.error('Registration error:', error);
-        let errorMessage = error.message;
-        
-        // Provide helpful error messages
-        if (errorMessage.includes('JSON')) {
-            errorMessage = 'Unable to connect to server. Please make sure the backend is running.';
-        } else if (errorMessage.includes('Failed to fetch')) {
-            errorMessage = 'Network error. Please check your connection and try again.';
-        }
-        
-        errorEl.textContent = errorMessage;
+        const info = APIClient.friendlyError(error);
+        errorEl.textContent = info.hint ? `${info.message}\n${info.hint}` : info.message;
         errorEl.classList.add('active');
     }
 }
@@ -189,7 +207,21 @@ function loadUserData() {
     createNewChat();
 }
 
-function handleLogout() {
+async function handleLogout() {
+    // Revoke the token server-side so it can never be reused
+    try {
+        const token = api.getToken();
+        if (token) {
+            await fetch(`${api.baseURL}/logout`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+    } catch (error) {
+        console.error('Logout revocation failed:', error);
+        // Never block the user on revocation failure - still log out locally
+    }
+
     // Call cleanup endpoint before logging out
     cleanupUserDocuments();
     

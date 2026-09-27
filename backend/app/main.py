@@ -10,12 +10,13 @@ from typing import List, Optional
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
 from app.models.schemas import (
     UserCreate, UserLogin, Token, User,
-    DocumentResponse, QuestionRequest, AnswerResponse,
+    DocumentResponse, IngestionJobStatus, QuestionRequest, AnswerResponse,
     EnhancedQuestionRequest, MultimodalQuestionRequest,
     ChatSessionCreate, ChatSession, ChatMessage,
     HealthResponse, ServiceStatus, Source
@@ -23,12 +24,18 @@ from app.models.schemas import (
 from app.services.user_service import user_service
 from app.services.document_processor import document_processor
 from app.services.vector_store import vector_store
-from app.services.llm_service import llm_service
+from app.services.cache_service import semantic_cache
+from app.services.llm_service import (
+    llm_service,
+    LLMUnavailableError,
+    SERVICE_UNAVAILABLE_MESSAGE,
+)
 from app.services.chat_service import chat_service
 from app.services.rag_enhanced import enhanced_rag
 from app.services.image_processor import image_processor
 from app.services.cleanup_service import cleanup_service
-from app.utils.auth import create_access_token, get_current_user_id
+from app.services.ingestion_service import ingestion_service
+from app.utils.auth import create_access_token, get_current_user_id, security, revoke_token
 from app.utils.file_handler import (
     validate_and_save_document,
     validate_and_save_image,
@@ -40,6 +47,27 @@ from app.utils.logging_config import setup_logging, get_logger
 # Setup logging
 setup_logging(level="INFO" if not settings.debug else "DEBUG")
 logger = get_logger(__name__)
+
+# Honest fallback: exact sentence returned when the documents cannot answer.
+ABSTAIN_REPLY = "I couldn't find that in your documents."
+
+
+def _generate_or_unavailable(question: str, chunks, chat_history=None):
+    """Generate a grounded answer, or report an honest service outage.
+
+    Returns (answer, degraded). Never substitutes excerpts for an answer.
+    """
+    try:
+        answer = llm_service.generate_answer(
+            question=question,
+            context_chunks=chunks,
+            chat_history=chat_history,
+            strict_mode=True,
+        )
+        return answer, False
+    except LLMUnavailableError as exc:
+        logger.warning(f"LLM unavailable, returning degraded response: {exc}")
+        return SERVICE_UNAVAILABLE_MESSAGE, True
 
 
 @asynccontextmanager
@@ -237,6 +265,15 @@ async def health_check():
     )
 
 
+@app.get("/cache/stats")
+async def cache_stats():
+    """Cache statistics (semantic answer cache + embedding cache)."""
+    return {
+        "semantic_cache": semantic_cache.stats(),
+        "embedding_cache": vector_store.embedding_cache_stats(),
+    }
+
+
 @app.get("/branding")
 async def get_branding():
     """Get application branding and author information"""
@@ -355,6 +392,24 @@ async def login(credentials: UserLogin):
 
 
 # ==================== Protected Endpoints ====================
+
+@app.post("/logout")
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Logout - revoke the current access token via the server-side denylist.
+
+    The token stays invalid until its natural expiry, so logging out
+    immediately invalidates the session everywhere.
+    """
+    token = credentials.credentials
+    revoke_token(token)
+    logger.info("User logged out (token revoked)")
+    return {
+        "message": "Logged out successfully",
+        "token_type": "bearer"
+    }
+
 
 @app.get("/me", response_model=User)
 async def get_current_user_info(user_id: int = Depends(get_current_user_id)):
@@ -739,31 +794,67 @@ async def delete_document(
         )
 
 
+# ==================== Ingestion Job Endpoints ====================
+
+@app.get("/ingestion/{job_id}", response_model=IngestionJobStatus)
+async def get_ingestion_status(
+    job_id: str,
+    user_id: int = Depends(get_current_user_id)
+):
+    """Get ingestion job status for current user"""
+    job = ingestion_service.get_job(job_id, user_id)
+
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ingestion job not found"
+        )
+
+    return IngestionJobStatus(
+        job_id=job["job_id"],
+        user_id=job["user_id"],
+        filename=job["filename"],
+        status=job["status"],
+        progress=job.get("progress", 0),
+        message=job.get("message"),
+        error=job.get("error"),
+        created_at=datetime.fromisoformat(job["created_at"]),
+        updated_at=datetime.fromisoformat(job["updated_at"]),
+        completed_at=datetime.fromisoformat(job["completed_at"]) if job.get("completed_at") else None
+    )
+
+
 @app.post("/ask", response_model=AnswerResponse)
 async def ask_question(
     request: QuestionRequest,
     user_id: int = Depends(get_current_user_id)
 ):
-    """SUPER INTERACTIVE question answering - Works with OR without documents!"""
+    """Document-grounded question answering with honest abstain behaviour."""
     logger.info(f"Question from user {user_id}: {request.question}")
     
     try:
-        # Search for relevant chunks (even if no documents, we'll still answer!)
+        # Search for relevant chunks
         results = vector_store.search(
             query=request.question,
             user_id=user_id,
             top_k=request.top_k
         )
         
-        # Generate answer in SUPER INTERACTIVE mode - ALWAYS helpful!
-        # Gemini AI will use documents if available, or general knowledge if not
-        answer = llm_service.generate_answer(
-            question=request.question,
-            context_chunks=results,  # Can be empty, AI still answers!
-            strict_mode=False  # SUPER INTERACTIVE: Always helpful!
+        # Honesty guard: drop chunks below the relevance threshold.
+        # If nothing clears the bar, abstain instead of guessing.
+        results = enhanced_rag.apply_relevance_cutoff(
+            results, settings.relevance_threshold, request.top_k, "relevance_score"
         )
         
-        # Format sources (if any)
+        if not results:
+            answer = ABSTAIN_REPLY
+            degraded = False
+        else:
+            answer, degraded = _generate_or_unavailable(
+                request.question, results
+            )
+        
+        # Format sources
         sources = [
             Source(
                 document_id=r['document_id'],
@@ -773,12 +864,13 @@ async def ask_question(
                 page_number=r.get('metadata', {}).get('page_number')
             )
             for r in results
-        ] if results else []
+        ]
         
         return AnswerResponse(
             answer=answer,
             sources=sources,
-            question=request.question
+            question=request.question,
+            degraded=degraded,
         )
     
     except HTTPException:
@@ -800,6 +892,18 @@ async def ask_question_enhanced(
     logger.info(f"Enhanced question from user {user_id}: {request.question}")
     
     try:
+        # Semantic cache: only for history-free questions, so a cached answer
+        # can never be replayed into a different conversation.
+        if not request.session_id:
+            cached = semantic_cache.get(request.question, user_id)
+            if cached:
+                return AnswerResponse(
+                    answer=cached["answer"],
+                    sources=[Source(**s) for s in cached["sources"]],
+                    question=request.question,
+                    cached=True,
+                )
+        
         # Get chat history if session provided
         chat_history = []
         if request.session_id:
@@ -814,31 +918,54 @@ async def ask_question_enhanced(
         if chat_history:
             query = llm_service.transform_query(request.question, chat_history)
         
-        # Search for relevant chunks
+        # Search for relevant chunks (hybrid: vector + keyword when enabled)
         top_k_search = request.top_k * 2 if request.use_reranking else request.top_k
-        results = vector_store.search(
-            query=query,
-            user_id=user_id,
-            top_k=top_k_search
-        )
+        if settings.enable_hybrid_search:
+            results = vector_store.search_hybrid(
+                query=query,
+                user_id=user_id,
+                top_k=top_k_search
+            )
+        else:
+            results = vector_store.search(
+                query=query,
+                user_id=user_id,
+                top_k=top_k_search
+            )
         
         # Re-rank results if available and requested
+        score_key = "relevance_score"
         if results and request.use_reranking and len(results) > 1:
             results = enhanced_rag.rerank_results(
                 query=request.question,
                 results=results,
                 top_k=request.top_k
             )
+            # Only use the re-rank scale if the cross-encoder actually ran
+            if enhanced_rag.reranker_available:
+                score_key = "rerank_score"
         elif results:
             results = results[:request.top_k]
         
-        # Generate answer with history
-        answer = llm_service.generate_answer(
-            question=request.question,
-            context_chunks=results,
-            chat_history=chat_history,
-            strict_mode=False
+        # Honesty guard: reranked chunks use rank order (cross-encoder scores
+        # are uncalibrated); vector-only paths use the similarity threshold.
+        # If nothing qualifies, abstain instead of calling the LLM.
+        threshold = (
+            settings.rerank_threshold if score_key == "rerank_score"
+            else settings.relevance_threshold
         )
+        results = enhanced_rag.apply_relevance_cutoff(
+            results, threshold, request.top_k, score_key
+        )
+        
+        # Generate answer with history, grounded strictly in the context
+        if not results:
+            answer = ABSTAIN_REPLY
+            degraded = False
+        else:
+            answer, degraded = _generate_or_unavailable(
+                request.question, results, chat_history=chat_history
+            )
         
         # Format sources
         sources = [
@@ -851,6 +978,12 @@ async def ask_question_enhanced(
             )
             for r in results
         ] if results else []
+        
+        # Cache the answer (history-free requests only, never an outage message)
+        if not request.session_id and not degraded:
+            semantic_cache.put(
+                request.question, user_id, answer, [s.dict() for s in sources]
+            )
         
         # Save to chat history if session exists
         if request.session_id:
@@ -870,7 +1003,8 @@ async def ask_question_enhanced(
         return AnswerResponse(
             answer=answer,
             sources=sources,
-            question=request.question
+            question=request.question,
+            degraded=degraded,
         )
     
     except HTTPException:
@@ -915,41 +1049,53 @@ async def ask_question_multimodal(
                 image_results=image_results
             )
             
-            # Take top-k from merged
+            # Take top-k from merged, then apply the honesty threshold
             merged_results = merged_results[:request.top_k]
-            
-            # Generate answer
-            answer = llm_service.generate_answer(
-                question=request.question,
-                context_chunks=merged_results
+            merged_results = enhanced_rag.apply_relevance_cutoff(
+                merged_results,
+                settings.relevance_threshold,
+                request.top_k,
+                "weighted_score"
             )
             
-            # Format sources
-            sources = []
-            for r in merged_results:
-                source_type = r.get('source_type', 'text')
-                if source_type == 'text':
-                    sources.append(Source(
-                        document_id=r['document_id'],
-                        document_name=r['document_name'],
-                        chunk_text=r['chunk_text'],
-                        relevance_score=r['relevance_score']
-                    ))
-                else:  # image
-                    sources.append(Source(
-                        document_id=r['metadata']['document_id'],
-                        document_name=f"Image: {r['metadata'].get('filename', 'unknown')}",
-                        chunk_text=f"[Image caption: {r['caption']}]",
-                        relevance_score=r['relevance_score']
-                    ))
+            if not merged_results:
+                answer = ABSTAIN_REPLY
+                sources = []
+                degraded = False
+            else:
+                # Generate answer, grounded strictly in the context
+                answer, degraded = _generate_or_unavailable(
+                    request.question, merged_results
+                )
+                
+                # Format sources
+                sources = []
+                for r in merged_results:
+                    source_type = r.get('source_type', 'text')
+                    if source_type == 'text':
+                        sources.append(Source(
+                            document_id=r['document_id'],
+                            document_name=r['document_name'],
+                            chunk_text=r['chunk_text'],
+                            relevance_score=r['relevance_score']
+                        ))
+                    else:  # image
+                        sources.append(Source(
+                            document_id=r['metadata']['document_id'],
+                            document_name=f"Image: {r['metadata'].get('filename', 'unknown')}",
+                            chunk_text=f"[Image caption: {r['caption']}]",
+                            relevance_score=r['relevance_score']
+                        ))
         else:
-            answer = "I don't have enough information to answer this question."
+            answer = ABSTAIN_REPLY
             sources = []
+            degraded = False
         
         return AnswerResponse(
             answer=answer,
             sources=sources,
-            question=request.question
+            question=request.question,
+            degraded=degraded,
         )
     
     except Exception as e:
@@ -976,9 +1122,14 @@ async def ask_question_stream(
             top_k=request.top_k
         )
         
+        # Honesty guard: drop chunks below the relevance threshold
+        results = enhanced_rag.apply_relevance_cutoff(
+            results, settings.relevance_threshold, request.top_k, "relevance_score"
+        )
+        
         if not results:
             async def no_results_stream():
-                yield "data: I don't have enough information to answer this question.\n\n"
+                yield f"data: {ABSTAIN_REPLY}\n\n"
             
             return StreamingResponse(
                 no_results_stream(),

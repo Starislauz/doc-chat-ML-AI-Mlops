@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta
 from typing import Optional
+import threading
+import time
 from jose import JWTError, jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status
@@ -14,6 +16,39 @@ logger = get_logger(__name__)
 
 # HTTP Bearer token scheme
 security = HTTPBearer()
+
+# ==================== Token Revocation (Logout) ====================
+# Server-side denylist for revoked JWTs. In-memory with expiry pruning;
+# use Redis instead for multi-instance deployments (see docs/DESIGN.md §7.3).
+
+_revoked_tokens: dict = {}
+_revoked_tokens_lock = threading.Lock()
+
+
+def _prune_revoked_tokens(now_ts: float) -> None:
+    """Drop denylist entries whose token has already expired."""
+    expired = [t for t, exp in _revoked_tokens.items() if exp <= now_ts]
+    for t in expired:
+        _revoked_tokens.pop(t, None)
+
+
+def revoke_token(token: str) -> None:
+    """Add a token to the denylist until its own expiry (logout)."""
+    payload = decode_access_token(token)
+    if not payload:
+        return
+    exp = payload.get("exp")
+    expires_at = float(exp) if exp else time.time() + settings.access_token_expire_minutes * 60
+    with _revoked_tokens_lock:
+        _prune_revoked_tokens(time.time())
+        _revoked_tokens[token] = expires_at
+    logger.info("Access token revoked until expiry")
+
+
+def is_token_revoked(token: str) -> bool:
+    """Return True if the token was revoked via /logout."""
+    with _revoked_tokens_lock:
+        return token in _revoked_tokens
 
 
 def hash_password(password: str) -> str:
@@ -137,6 +172,14 @@ async def get_current_user_id(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if is_token_revoked(token):
+        logger.warning("Revoked token presented")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked. Please log in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     

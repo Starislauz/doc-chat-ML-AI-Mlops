@@ -1,10 +1,173 @@
-# RAG Document Chat API 🚀
+# Doc-Chat — a document RAG that says "I don't know"
 
-A production-ready **Retrieval Augmented Generation (RAG)** document chat system with **multi-file upload**, **image OCR support**, and **hybrid AI mode**, built with FastAPI, ChromaDB, and Google Gemini AI.
+A retrieval-augmented chat app that answers questions **only** from the documents you upload — and refuses honestly when the answer isn't in them.
 
-## ✨ Key Features
+**Stack:** Python 3.11 · FastAPI · ChromaDB · sentence-transformers (`all-MiniLM-L6-v2`) · cross-encoder re-ranking (`ms-marco-MiniLM-L-6-v2`) · DeepSeek (`deepseek-chat`) for generation · Gemini Vision for image OCR · vanilla JS frontend (no build step) · SQLite for users and chat history.
 
-### 📤 **Multi-File Upload**
+---
+
+## Why this one is different
+
+Most RAG demos ask *"does it answer?"*. This one also asks *"does it refuse when it should — and can I prove it got better?"*
+
+Three properties, each enforced in code:
+
+1. **It abstains instead of guessing.** The prompt forbids outside knowledge, and every answer path returns exactly *"I couldn't find that in your documents."* when the retrieved context doesn't contain the answer. Measured at **100%** across 8 deliberately unanswerable questions.
+2. **Every change is measured.** A 30-question golden set (22 answerable + 8 traps) scores Recall@k, MRR, correctness, faithfulness, abstain accuracy and latency, and saves a timestamped report per run so configurations can be compared side by side.
+3. **Failures are honest.** If the LLM is unreachable the API returns `degraded: true` with a plain "service unavailable" message — it never passes document excerpts off as an answer. The evaluation excludes degraded responses from its metrics.
+
+## Measured results
+
+Every configuration below was run against the same golden set (`eval/golden_set.json`) through the same endpoint the UI uses. Raw reports: `eval/results/`.
+
+| Config | Change | Recall@k | MRR | Correctness | Faithfulness | Abstain | False abstains |
+|---|---|---|---|---|---|---|---|
+| B | baseline (vector-only, no threshold tuning) | 0.909 | 0.909 | 0.909 | 1.000 | 1.000 | 2 / 22 |
+| C | + hybrid BM25 search | 0.909 | 0.909 | 0.909 | 1.000 | 1.000 | 2 / 22 |
+| D | + structure-aware chunking | 0.909 | 0.875 | 0.909 | 1.000 | 1.000 | 2 / 22 |
+| E2 | + rank-based selection and honest failure path | **1.000** | 0.899 | **1.000** | **1.000** | **1.000** | **0 / 22** |
+
+What the table actually taught us (kept honest on purpose):
+
+- **Chunking and hybrid search alone did not move the headline number**, and a diagnostic tool (`scripts/debug_retrieval.py`) showed why: the original 500-character chunker produced 8-character shards such as `funding.` and chunks that mixed two unrelated sections, so the cross-encoder scored a chunk *containing the answer* at **-9.2** and it was thrown away.
+- **The fix was coherence, not cleverness:** section-aware chunking (1200 chars / 150 overlap, with the section heading prepended to every chunk) plus **rank-based** selection, instead of an absolute cutoff applied to uncalibrated cross-encoder logits.
+- **Hybrid search was re-enabled after real documents proved it.** On the clean synthetic set it tied with vector-only; on real documents (a photographed certificate plus a multi-page PDF) vector search missed a literal code ("A1") completely, which is exactly what BM25 keyword matching catches.
+- **The golden set was too easy**, and real documents exposed four bugs a clean benchmark never would: corrupted PDF text extraction (`Unof ficial`, `Studen t name`), wrong-document retrieval, a prompt too strict to allow grounded inference, and `[object Object]` error messages in the UI. All four are fixed.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    U[Browser: vanilla JS UI] -->|JWT| API[FastAPI]
+    API --> AUTH[Auth: bcrypt + JWT, in-memory denylist]
+    API --> ING[Ingestion]
+    API --> ASK[Ask pipeline]
+
+    ING --> DP[Document processor]
+    DP -->|PDF: pdfplumber + PyPDF2, best-of| TXT[Text]
+    DP -->|DOCX, TXT, MD| TXT
+    DP -->|Images: Gemini Vision| TXT
+    TXT --> CH[Section-aware chunker 1200/150]
+    CH --> EMB[Embedding cache]
+    EMB --> VDB[(ChromaDB, per-user isolation)]
+    API --> SQL[(SQLite: users, chat history)]
+
+    ASK --> CACHE{Semantic cache\nsame question, same docs?}
+    CACHE -->|hit| RESP[Answer + sources]
+    CACHE -->|miss| RET[Retrieval]
+    RET --> HYB[Vector search + BM25, RRF fusion]
+    HYB --> RR[Cross-encoder re-rank]
+    RR --> CUT[Rank-based selection]
+    CUT --> LLM[DeepSeek generation]
+    LLM --> RESP
+```
+
+Data flow in words:
+
+1. **Upload** → text extracted (PDF via pdfplumber/PyPDF2, best-quality of the two; images via Gemini Vision) → split at section and paragraph boundaries → embedded → stored in ChromaDB tagged with `user_id`.
+2. **Ask** → semantic cache lookup (same user, unchanged document set, similarity ≥ 0.95) → otherwise vector + BM25 retrieval → RRF fusion → cross-encoder re-ranking → rank-based selection → generation with `[Source N]` citations.
+3. **Honesty guard** → if nothing relevant is retrieved, or the context lacks the answer, the API returns the abstain sentence instead of guessing.
+
+## Quick start (local)
+
+```bash
+# 1. Clone
+git clone https://github.com/starislauz/doc-chat.git
+cd doc-chat
+
+# 2. Virtual environment
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # macOS / Linux
+
+# 3. Dependencies
+pip install -r backend/requirements.txt
+
+# 4. Configuration: copy the template and add your keys
+copy .env.example .env         # Windows (cp on macOS/Linux)
+```
+
+Then edit `.env` — the minimum you need is:
+
+```env
+DEEPSEEK_API_KEY=sk-...        # generation (required)
+GEMINI_API_KEY=...             # image OCR only (optional but recommended)
+LLM_PROVIDER=deepseek          # or "gemini"
+SECRET_KEY=<a long random string>
+```
+
+```bash
+# 5. Run
+cd backend
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Open **http://localhost:8000** — register an account, upload a document, ask a question.
+
+> First start downloads the embedding and re-ranking models (~180 MB total) and the first request can take 10–30 seconds while they load into memory. After that, answers take ~4 seconds.
+
+## Supported files and limits
+
+| Type | Notes |
+|---|---|
+| PDF | Text PDFs preferred. Scanned/image PDFs are transcribed with Gemini Vision |
+| DOCX | Paragraphs and tables |
+| TXT / MD | UTF-8. Markdown headings produce the best chunks |
+| PNG / JPG / BMP / TIFF (+ GIF/WebP via the image endpoint) | Gemini Vision reads text in images |
+
+Limits: **3 documents per account**, 10 MB per document (5 MB per image), 5 files per upload request.
+
+## Testing and evaluation
+
+This is where the project earns its keep. Three tools, all run from the project root against a live server:
+
+```bash
+# Quality: 30-question golden set -> Recall@k, MRR, correctness, faithfulness,
+# abstain accuracy, latency. Saves eval/results/run_<timestamp>.json + history.csv
+python scripts/eval_rag.py --label "my config" --delay 2
+
+# Abort if a build regresses
+python scripts/check_extraction.py backend/uploads      # flags mid-word PDF splits
+python scripts/debug_retrieval.py --question "..." --evidence "..."   # stage-by-stage retrieval
+```
+
+`eval/README.md` explains the harness; `eval/golden_set.json` is the question set; `eval/test_docs/` holds the documents it is scored against.
+
+## Known limitations
+
+Stated plainly, because hiding them would be dishonest:
+
+- **The benchmark is small and clean.** 3 synthetic documents, 30 questions. A perfect score there does not mean perfect on messy real-world documents — real documents already exposed four bugs this set could not.
+- **Chunking is structural, not semantic.** It splits at headings and paragraphs; it does not understand topic shifts within a long paragraph.
+- **MRR is 0.899, not 1.000.** Answers are correct, but the best chunk sometimes ranks 3rd–5th, which costs context.
+- **Every answer sends up to 5 chunks** — correct, but more tokens than strictly needed.
+- **OCR quality depends on scan quality**, and image reading needs the Gemini key (DeepSeek has no vision).
+- **Retrieval is English-focused.** `all-MiniLM-L6-v2` is a small English model; other languages will retrieve worse.
+- **The relevance threshold is hand-tuned, not learned.**
+- **Cold starts.** The models need ~1.5–2 GB of RAM, so an idle instance takes 10–30 seconds to warm up; most 512 MB free tiers will be killed outright.
+- **Single process assumptions.** The semantic and embedding caches live in memory, so they are per-worker and reset on restart; logout revocation is likewise in-memory, not durable.
+- **No rate limiting yet.** On a public deployment anyone who registers can consume your LLM credits — set a spending cap on your provider, or add a limit before sharing it widely.
+- **Not verified:** real mobile devices, the upload modal on mobile, and behaviour under concurrent users.
+
+## Deployment
+
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the free-hosting guide (which tiers actually work for a 2 GB model app, how to deploy to Hugging Face Spaces, and what to do about the missing persistent disk).
+
+## Author
+
+**Anthony Njoku** — AI/ML Engineer & MLOps Specialist
+
+- GitHub: [starislauz](https://github.com/starislauz)
+- LinkedIn: [anthony-emeka](https://www.linkedin.com/in/anthony-emeka-6227782a1/)
+- Portfolio: [starislauz.github.io/myportfolio.com](https://starislauz.github.io/myportfolio.com/)
+
+---
+
+# Appendix — original feature notes and API reference
+
+The sections below are the project's original notes, kept for reference: feature breakdown, REST API examples, project structure, multi-tenancy and troubleshooting.
+
+
 - Upload up to **5 files at once** (PDFs, documents, images)
 - Drag & drop interface with live preview
 - Batch processing for multiple documents
@@ -18,10 +181,11 @@ A production-ready **Retrieval Augmented Generation (RAG)** document chat system
   - 📄 Scanned documents
   - 📊 Screenshots with text
 
-### 🤖 **Hybrid AI Mode**
-- **Smart Document Search**: Answers from uploaded documents first (with citations)
-- **Research Assistant**: Offers general knowledge when info not in documents
-- **Transparent**: Always tells you the source (documents vs. general knowledge)
+### 🤖 **Document-only answering (no general knowledge)**
+- **Grounded**: answers come from your uploaded documents, with `[Source N]` citations
+- **Honest**: if the documents don't contain the answer it replies *"I couldn't find that in your documents."*
+- **Reasoning allowed**: it may count, total, compare and conclude from the retrieved facts — but it never adds outside facts
+- **No guessing**: no "helpful" filler, no invented numbers, dates or names
 
 ### 🔐 **Authentication & Security**
 - JWT-based authentication with Bearer tokens
@@ -69,8 +233,7 @@ A production-ready **Retrieval Augmented Generation (RAG)** document chat system
 - **Python 3.8+** (Windows, macOS, or Linux)
 - **Google Gemini API Key** - Get it from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - **Tesseract OCR (Optional)** - For better image text extraction
-  - **Not required!** Application uses Gemini Vision as fallback
-  - See [TESSERACT_SETUP.md](TESSERACT_SETUP.md) for installation instructions
+  - **Not required!** Images are read with Gemini Vision, which needs `GEMINI_API_KEY`. Install Tesseract only if you want local OCR
   - Windows: [Download installer](https://github.com/UB-Mannheim/tesseract/wiki)
   - Linux: `sudo apt-get install tesseract-ocr`
   - Mac: `brew install tesseract`
@@ -89,30 +252,11 @@ A production-ready **Retrieval Augmented Generation (RAG)** document chat system
 
 ### Installation
 
-1. **Clone or download this project**
+See **Quick start** above — it lists the exact commands for Windows, macOS and Linux.
 
-2. **Get your Gemini API key**
-   - Visit https://makersuite.google.com/app/apikey
-   - Create a new API key
-   - Copy it for the next step
+> Older versions of this document described a `START_SERVER.bat` helper. That file is not part of the repository; the Quick start commands above are the supported path.
 
-3. **Run the startup script (Windows)**
-   ```batch
-   START_SERVER.bat
-   ```
-
-   The script will automatically:
-   - Check Python installation
-   - Create virtual environment
-   - Install all dependencies
-   - Start the server
-
-4. **Configure your API key**
-   - Edit the `.env` file that was created
-   - Replace `your_gemini_api_key_here` with your actual API key
-   - Save the file and restart the server
-
-### Manual Installation (Alternative)
+### Manual installation (alternative)
 
 If you prefer manual setup:
 
@@ -305,28 +449,35 @@ print(f"Sources: {len(answer['sources'])}")
 Edit `.env` file to customize settings:
 
 ```env
-# Required
-GEMINI_API_KEY=your_api_key_here
+# Required - generation
+DEEPSEEK_API_KEY=sk-...
+LLM_PROVIDER=deepseek          # or "gemini"
 
-# Optional - Security
-SECRET_KEY=your-secret-key-change-this-in-production
-ACCESS_TOKEN_EXPIRE_MINUTES=10080  # 7 days
+# Optional - image OCR (Gemini Vision). Images are skipped without it.
+GEMINI_API_KEY=...
 
-# Optional - Redis Cache (system works without it)
+# Security - use a long random string in production
+SECRET_KEY=change-me
+ACCESS_TOKEN_EXPIRE_MINUTES=10080   # 7 days
+
+# Optional - Redis cache (the app works without it; an in-process cache is used)
 REDIS_HOST=localhost
 REDIS_PORT=6379
 CACHE_ENABLED=true
 ```
 
-### Configuration Options
+### Configuration options
 
-All settings can be customized in `backend/app/config/settings.py`:
+All settings live in `backend/app/config/settings.py` (or the matching environment variable):
 
-- **File Upload**: Max size (10 MB), allowed types
-- **Chunking**: Chunk size (500 chars), overlap (50 chars)
-- **Embedding Model**: all-MiniLM-L6-v2 (can be changed)
-- **LLM Model**: gemini-2.0-flash-exp
-- **RAG**: Top-K (5), re-ranking model
+- **Chunking**: `CHUNK_SIZE` (1200 chars), `CHUNK_OVERLAP` (150)
+- **Embeddings**: `EMBEDDING_MODEL` (`all-MiniLM-L6-v2`)
+- **Retrieval**: `DEFAULT_TOP_K` (5), `ENABLE_HYBRID_SEARCH` (vector + BM25),
+  `RELEVANCE_THRESHOLD` (0.35 cosine, vector paths),
+  `RERANK_THRESHOLD` (`null` = rank-based selection; cross-encoder scores are uncalibrated)
+- **Generation**: `LLM_PROVIDER`, `DEEPSEEK_MODEL`, `GEMINI_MODEL`
+- **Caching**: `SEMANTIC_CACHE_ENABLED`, `SEMANTIC_CACHE_THRESHOLD` (0.95), `SEMANTIC_CACHE_TTL`
+- **Uploads**: max size, allowed types, `MAX_FILES_PER_UPLOAD`
 
 ## Project Structure
 
@@ -345,7 +496,8 @@ project/
 │   │   │   ├── llm_service.py         # Gemini API
 │   │   │   ├── user_service.py        # User management
 │   │   │   ├── chat_service.py        # Chat history
-│   │   │   ├── rag_enhanced.py        # Advanced RAG
+│   │   │   ├── rag_enhanced.py        # Re-ranking, relevance cutoff
+│   │   │   ├── cache_service.py       # Semantic answer cache
 │   │   │   └── image_processor.py     # Image processing
 │   │   └── utils/
 │   │       ├── auth.py                # JWT authentication
@@ -356,11 +508,12 @@ project/
 │   └── chat_history.db                # Chat database (created automatically)
 ├── uploads/                           # Uploaded files (created automatically)
 ├── images/                            # Extracted images (created automatically)
-├── requirements.txt                   # Python dependencies
+├── eval/                              # 30-question golden set, test docs, results
+├── scripts/                           # eval_rag.py, check_extraction.py, debug_retrieval.py
+├── docs/                              # DESIGN.md, DEPLOYMENT.md
+├── requirements.txt                   # Python dependencies (backend/requirements.txt)
 ├── .env                               # Configuration (create from .env.example)
-├── .env.example                       # Configuration template
-├── README.md                          # This file
-└── START_SERVER.bat                   # Windows startup script
+└── README.md                          # This file
 ```
 
 ## Architecture
@@ -412,8 +565,7 @@ All data is isolated by `user_id`:
   - Check internet connection
   - Check firewall settings
   - Configure proxy if behind corporate network
-  - See detailed guide: [NETWORK_TROUBLESHOOTING.md](NETWORK_TROUBLESHOOTING.md)
-- **Note:** Application provides offline fallback with document excerpts
+  - The app retries automatically, then reports the outage honestly instead of inventing an answer
 
 **2. Image Upload Error: "tesseract is not installed"**
 - **No worries!** Tesseract is optional

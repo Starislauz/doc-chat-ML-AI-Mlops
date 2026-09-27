@@ -1,34 +1,130 @@
 // Main app initialization and utilities
 
 // Toast notifications
-function showToast(title, message, type = 'success', duration = 4000) {
-    const container = document.getElementById('toastContainer');
-    
+//
+// Built with DOM nodes + textContent (never innerHTML for server text), so a
+// filename or server message can never inject markup. Supports either
+// showToast(title, message, type, duration) or showToast({ title, message }).
+function showToast(title, message, type = 'success', duration = 4200) {
+    if (title && typeof title === 'object') {
+        ({ title, message, type = 'success', duration = 4200 } = title);
+    }
+
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    // Collapse identical repeats (the same failure often fires twice)
+    const signature = `${type}|${title}|${message}`;
+    const duplicate = Array.from(container.children)
+        .find((child) => child.dataset.signature === signature);
+    if (duplicate) return duplicate;
+
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-triangle-exclamation'
+    };
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
-    const icon = type === 'success' ? 'fa-check-circle' : 
-                 type === 'error' ? 'fa-exclamation-circle' : 
-                 'fa-info-circle';
-    
-    toast.innerHTML = `
-        <div class="toast-icon">
-            <i class="fas ${icon}"></i>
-        </div>
-        <div class="toast-content">
-            <div class="toast-title">${title}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-    `;
-    
+    toast.dataset.signature = signature;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'toast-icon';
+    const icon = document.createElement('i');
+    icon.className = `fas ${icons[type] || 'fa-info-circle'}`;
+    iconWrap.appendChild(icon);
+
+    const content = document.createElement('div');
+    content.className = 'toast-content';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'toast-title';
+    titleEl.textContent = title || '';
+    content.appendChild(titleEl);
+
+    if (message) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'toast-message';
+        messageEl.textContent = message;
+        content.appendChild(messageEl);
+    }
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'toast-close';
+    close.setAttribute('aria-label', 'Dismiss');
+    close.textContent = '\u00d7';
+    close.addEventListener('click', () => removeToast(toast));
+
+    toast.append(iconWrap, content, close);
     container.appendChild(toast);
-    
-    // Auto remove after specified duration
-    setTimeout(() => {
-        toast.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
+
+    // Keep the stack short so a burst of errors can't cover the screen
+    while (container.children.length > 4) {
+        removeToast(container.firstElementChild);
+    }
+
+    // Errors deserve longer on screen than confirmations
+    const life = type === 'error' && duration === 4200 ? 8000 : duration;
+    if (life > 0) setTimeout(() => removeToast(toast), life);
+
+    return toast;
 }
+
+function removeToast(toast) {
+    if (!toast || !toast.parentElement) return;
+    toast.style.animation = 'slideOutRight 0.22s ease forwards';
+    setTimeout(() => toast.remove(), 220);
+}
+
+/**
+ * Explain a failure anywhere in the app the same way.
+ * Falls back to plain text if the API client has not loaded yet.
+ */
+function errorText(error) {
+    const info = (typeof APIClient !== 'undefined' && APIClient.friendlyError)
+        ? APIClient.friendlyError(error)
+        : { title: 'Something went wrong', message: (error && error.message) || String(error), hint: null };
+    return {
+        title: info.title || 'Something went wrong',
+        text: info.hint ? `${info.message}\n${info.hint}` : (info.message || '') 
+    };
+}
+
+function showErrorToast(error, fallbackTitle = 'Something went wrong') {
+    const info = errorText(error);
+    return showToast(info.title || fallbackTitle, info.text, 'error');
+}
+
+// Last line of defence: nothing should ever fail silently in the console only.
+let lastUnexpectedReport = 0;
+function reportUnexpectedError(detail) {
+    const now = Date.now();
+    if (now - lastUnexpectedReport < 5000) return; // don't spam the user
+    lastUnexpectedReport = now;
+    console.error('Unexpected UI error:', detail);
+    showToast(
+        'Something went wrong',
+        'An unexpected error occurred in the interface. Your documents are safe - please try that again.',
+        'error'
+    );
+}
+
+window.addEventListener('unhandledrejection', (event) => {
+    reportUnexpectedError(event.reason);
+});
+
+window.addEventListener('error', (event) => {
+    // Ignore resource-load failures (fonts, icons); only real script errors
+    if (event.error) reportUnexpectedError(event.error);
+});
 
 // Theme toggle
 let isDarkTheme = true;
@@ -96,6 +192,17 @@ function initMobileMenu() {
     // Close sidebar when overlay is clicked
     overlay.addEventListener('click', () => {
         closeMobileSidebar();
+    });
+
+    // Explicit close button inside the drawer
+    const closeBtn = document.getElementById('closeSidebarBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => closeMobileSidebar());
+    }
+
+    // Escape closes the drawer
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMobileSidebar();
     });
     
     // Close sidebar when a document is selected (mobile only)
@@ -221,8 +328,8 @@ async function loadBranding() {
         
         // Update auth modal
         document.getElementById('authAppTitle').textContent = isProfessional 
-            ? `🤖 ${branding.app_name}` 
-            : `🚀 ${branding.branded_name}`;
+            ? branding.app_name 
+            : branding.branded_name;
         document.getElementById('authAppSubtitle').textContent = branding.tagline;
         document.getElementById('authAppAuthor').textContent = branding.author;
         
@@ -306,6 +413,8 @@ function closeAboutModal() {
 // Initialize everything
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 RAG Document Chat UI initialized');
+
+    document.body.classList.add('performance-mode');
     
     initTheme();
     initSettings();

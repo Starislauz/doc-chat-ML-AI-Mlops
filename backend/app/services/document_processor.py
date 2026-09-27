@@ -1,6 +1,8 @@
 """Document processing service - PDF, TXT, MD, DOCX, and IMAGE parsing and chunking"""
 
 import os
+import re
+import unicodedata
 from typing import List, Tuple, Dict
 import PyPDF2
 from io import BytesIO
@@ -46,6 +48,10 @@ class DocumentProcessor:
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
         
+        # Normalise unicode first: NFKC turns ligatures (ﬁ, ﬂ) into plain
+        # letters, which otherwise break keyword matching and look like typos.
+        text = self._normalize_text(text)
+        
         # Create chunks
         chunks = self._create_chunks(text)
         
@@ -64,6 +70,12 @@ class DocumentProcessor:
             Extracted text
         """
         text = ""
+        
+        # Layout-aware extraction first. Some PDFs position every glyph
+        # individually, which makes naive extractors insert spaces inside words
+        # ("Unof ficial", "Studen t name", "c ourses"). pdfplumber with a tight
+        # x_tolerance merges those glyph runs back into real words.
+        plumber_text = self._extract_pdf_text_pdfplumber(file_path)
         
         try:
             with open(file_path, "rb") as file:
@@ -102,7 +114,117 @@ class DocumentProcessor:
             logger.error(f"Error extracting PDF text: {str(e)}")
             raise ValueError(f"Failed to process PDF: {str(e)}")
         
+        # Keep whichever extraction is less fragmented (see _text_quality).
+        # Measured comparison, not a guess: the scores are logged either way.
+        if plumber_text:
+            plumber_quality = self._text_quality(plumber_text)
+            pypdf_quality = self._text_quality(text)
+            if plumber_quality >= pypdf_quality:
+                logger.info(
+                    f"PDF text: using pdfplumber (quality {plumber_quality:.3f} "
+                    f"vs PyPDF2 {pypdf_quality:.3f})"
+                )
+                text = plumber_text
+            else:
+                logger.info(
+                    f"PDF text: using PyPDF2 (quality {pypdf_quality:.3f} "
+                    f"vs pdfplumber {plumber_quality:.3f})"
+                )
+        
+        fragments = self.find_fragments(text, limit=3)
+        if fragments:
+            logger.warning(
+                f"Extracted PDF text still shows {len(fragments)}+ suspected "
+                f"mid-word splits, e.g. {fragments}"
+            )
+        
         return text.strip()
+    
+    # ---------------------------------------------------------------- helpers
+    # Short tokens that are legitimate English words (excluded from the
+    # fragmentation check so normal prose is not flagged).
+    _SHORT_OK = {
+        "a", "i", "am", "an", "as", "at", "be", "by", "do", "go", "he",
+        "if", "in", "is", "it", "me", "my", "no", "of", "ok", "on", "or",
+        "so", "to", "up", "us", "we",
+    }
+    
+    @staticmethod
+    def _normalize_text(text: str) -> str:
+        """NFKC-normalise text: ligatures (ﬁ, ﬂ) become plain letters."""
+        return unicodedata.normalize("NFKC", text) if text else text
+    
+    @classmethod
+    def _text_quality(cls, text: str) -> float:
+        """Score extracted text from 0..1 (higher = fewer mid-word splits).
+
+        Fragmented extractions ("Unof ficial", "c ourses", "Studen t") produce
+        many short lowercase shards that are not real English words. Real prose
+        produces very few.
+        """
+        tokens = re.findall(r"[A-Za-z]+", text or "")
+        if not tokens:
+            return 0.0
+        shards = sum(
+            1 for token in tokens
+            if len(token) <= 2 and token.islower() and token not in cls._SHORT_OK
+        )
+        return 1.0 - (shards / len(tokens))
+    
+    @classmethod
+    def find_fragments(cls, text: str, limit: int = 20) -> List[str]:
+        """Return examples of suspected mid-word splits, for diagnostics."""
+        examples: List[str] = []
+        for match in re.finditer(r"\b[A-Za-z]{2,}\s+([a-z]{1,2})\b", text or ""):
+            shard = match.group(1)
+            if shard in cls._SHORT_OK:  # legitimate short word, not a shard
+                continue
+            start = max(0, match.start() - 25)
+            snippet = text[start:match.end() + 25].replace("\n", " ").strip()
+            examples.append(snippet)
+            if len(examples) >= limit:
+                break
+        return examples
+    
+    def _extract_pdf_text_pdfplumber(self, file_path: str) -> str:
+        """Extract PDF text with pdfplumber, tuning character tolerance.
+
+        Tries several x_tolerance values per page and keeps the cleanest result,
+        which repairs PDFs whose glyphs are individually positioned.
+        """
+        try:
+            import pdfplumber
+        except ImportError:
+            logger.info("pdfplumber not installed - skipping layout-aware extraction")
+            return ""
+        
+        try:
+            parts: List[str] = []
+            with pdfplumber.open(file_path) as pdf:
+                for page_number, page in enumerate(pdf.pages, start=1):
+                    best = ""
+                    for tolerance in (1, 2.5, 5):
+                        try:
+                            candidate = page.extract_text(x_tolerance=tolerance) or ""
+                        except Exception:
+                            candidate = ""
+                        if candidate and self._text_quality(candidate) > self._text_quality(best):
+                            best = candidate
+                        if best and self._text_quality(best) > 0.9:
+                            break
+                    if best.strip():
+                        parts.append(f"\n--- Page {page_number} ---\n{best}")
+            
+            text = "".join(parts).strip()
+            if text:
+                logger.info(
+                    f"pdfplumber extracted {len(text)} chars "
+                    f"(quality {self._text_quality(text):.3f})"
+                )
+            return text
+        except Exception as exc:
+            logger.warning(f"pdfplumber extraction failed: {exc}")
+            return ""
     
     def _extract_docx_text(self, file_path: str) -> str:
         """
@@ -344,47 +466,127 @@ Start transcription now:"""
     
     def _create_chunks(self, text: str) -> List[str]:
         """
-        Split text into overlapping chunks
-        
-        Args:
-            text: Full text to chunk
-        
-        Returns:
-            List of text chunks
+        Split text into coherent chunks (structure-aware).
+
+        Old behaviour cut the text every N characters, which produced
+        fragments like "funding." and chunks that mixed two unrelated
+        sections (statistics + funding). That destroyed both retrieval and
+        cross-encoder re-ranking quality.
+
+        New behaviour:
+          1. Split into sections at headings (markdown, ALL-CAPS/"7. TITLE"
+             lines, and PDF "--- Page N ---" markers).
+          2. Pack whole paragraphs into chunks up to chunk_size characters.
+          3. Prepend the section heading to every chunk so it is
+             self-contained, and carry a word-aligned overlap between
+             chunks of the same section.
+          4. Only split inside a paragraph if a single paragraph is longer
+             than chunk_size, and then at sentence boundaries.
         """
         if not text:
             return []
         
-        chunks = []
-        start = 0
-        text_length = len(text)
+        chunks: List[str] = []
+        for heading, body in self._split_sections(text):
+            paragraphs = [p.strip() for p in re.split(r'\n\s*\n', body) if p.strip()]
+            if not paragraphs:
+                if heading:
+                    chunks.append(heading)
+                continue
+            
+            prefix = (heading + "\n\n") if heading else ""
+            current = ""
+            
+            for para in paragraphs:
+                for piece in self._split_long_paragraph(para, self.chunk_size):
+                    if not current:
+                        current = piece
+                    elif len(current) + len(piece) + 2 <= self.chunk_size:
+                        current = f"{current}\n\n{piece}"
+                    else:
+                        chunks.append((prefix + current).strip())
+                        tail = self._tail_overlap(current, self.chunk_overlap)
+                        current = f"{tail}\n\n{piece}" if tail else piece
+            
+            if current:
+                chunks.append((prefix + current).strip())
         
-        while start < text_length:
-            # Get chunk
-            end = start + self.chunk_size
-            chunk = text[start:end]
-            
-            # Try to break at sentence or word boundary
-            if end < text_length:
-                # Look for sentence ending
-                last_period = chunk.rfind('. ')
-                last_newline = chunk.rfind('\n')
-                last_break = max(last_period, last_newline)
-                
-                if last_break > self.chunk_size * 0.5:  # At least 50% of chunk size
-                    chunk = chunk[:last_break + 1]
-                    end = start + last_break + 1
-            
-            chunks.append(chunk.strip())
-            
-            # Move start position with overlap
-            start = end - self.chunk_overlap
-            
-            # Ensure we're making progress
-            if start <= 0 or start >= text_length:
-                break
+        # Drop degenerate fragments (e.g. a stray heading or "funding.")
+        # 25 chars keeps short but real content (image captions) while
+        # discarding the 8-char shards the old chunker produced.
+        return [c for c in chunks if len(c.strip()) > 25]
+    
+    # Section headings: markdown (## X), numbered ALL-CAPS ("7. DATA RETENTION")
+    # and PDF page markers ("--- Page 3 ---").
+    _HEADING_PATTERNS = (
+        re.compile(r'^#{1,6}\s+\S.*$'),
+        re.compile(r'^\s*\d+\.\s+[A-Z][A-Z0-9 ,&/\-()]{2,59}$'),
+        re.compile(r'^---\s*Page\s+\d+\s*---$', re.IGNORECASE),
+    )
+    
+    @classmethod
+    def _is_heading(cls, line: str) -> bool:
+        return any(p.match(line.strip()) for p in cls._HEADING_PATTERNS)
+    
+    @classmethod
+    def _split_sections(cls, text: str) -> List[Tuple[str, str]]:
+        """Split text into (heading, body) sections."""
+        sections: List[Tuple[str, str]] = []
+        heading = ""
+        body: List[str] = []
         
-        return [c for c in chunks if c]  # Remove empty chunks
+        for line in text.split("\n"):
+            if cls._is_heading(line):
+                if heading or any(l.strip() for l in body):
+                    sections.append((heading, "\n".join(body)))
+                heading = line.strip()
+                body = []
+            else:
+                body.append(line)
+        
+        if heading or any(l.strip() for l in body):
+            sections.append((heading, "\n".join(body)))
+        
+        return sections
+    
+    @staticmethod
+    def _tail_overlap(text: str, overlap: int) -> str:
+        """Last `overlap` characters of text, trimmed to a word boundary."""
+        if overlap <= 0 or len(text) <= overlap:
+            return ""
+        tail = text[-overlap:]
+        space = tail.find(' ')
+        return tail[space + 1:].strip() if space != -1 else tail.strip()
+    
+    def _split_long_paragraph(self, para: str, max_size: int) -> List[str]:
+        """Split an over-long paragraph at sentence boundaries."""
+        if len(para) <= max_size:
+            return [para]
+        
+        sentences = re.split(r'(?<=[.!?])\s+', para)
+        packed: List[str] = []
+        current = ""
+        
+        for sentence in sentences:
+            if not current:
+                current = sentence
+            elif len(current) + len(sentence) + 1 <= max_size:
+                current = f"{current} {sentence}"
+            else:
+                packed.append(current)
+                current = sentence
+        if current:
+            packed.append(current)
+        
+        # Hard-split anything still too long (e.g. a wall of text with no periods)
+        final: List[str] = []
+        for piece in packed:
+            while len(piece) > max_size:
+                final.append(piece[:max_size])
+                piece = piece[max_size:]
+            if piece:
+                final.append(piece)
+        return final
     
     def extract_pdf_pages(self, file_path: str) -> Dict[int, str]:
         """

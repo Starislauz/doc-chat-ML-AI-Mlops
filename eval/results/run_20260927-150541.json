@@ -1,0 +1,1566 @@
+{
+  "run_id": "20260927-150541",
+  "label": "Config E-rankcut",
+  "timestamp": "2026-09-27T15:05:41",
+  "config_snapshot": {
+    "chunk_size": 1200,
+    "chunk_overlap": 150,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "relevance_threshold": 0.35,
+    "rerank_threshold": null,
+    "default_top_k": 5,
+    "gemini_model": "gemini-2.5-flash",
+    "llm_provider": "deepseek",
+    "deepseek_model": "deepseek-chat",
+    "enable_hybrid_search": true
+  },
+  "summary": {
+    "label": "Config E-rankcut",
+    "errors": 0,
+    "n_answerable": 22,
+    "n_unanswerable": 8,
+    "recall_at_k": 1.0,
+    "mrr": 0.8992,
+    "correctness": 1.0,
+    "correctness_source": "judge(22)",
+    "faithfulness": 1.0,
+    "faithfulness_source": "judge(22)",
+    "abstain_accuracy": 0.875,
+    "false_abstain_rate": 0.0,
+    "avg_latency_s": 5.014,
+    "avg_chunks": 5.0
+  },
+  "records": [
+    {
+      "id": 1,
+      "question": "What are the physical dimensions of the Nebula Pro thermostat?",
+      "answerable": true,
+      "answer": "The Nebula Pro measures 84 mm wide, 84 mm tall and 22 mm deep, and weighs 210 grams without the mounting plate [Source 1].",
+      "abstained": false,
+      "latency_s": 10.129,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 2. Physical Specifications\n\nThe Nebula Pro measures 84 mm wide, 84 mm tall and 22 mm deep, and weighs 210\ngrams without the mounting plate. The display is a 4-inch IPS panel with a\nresolution of 480 by 480 pixels. The housing is flame-retardant polycarbonate\nwith a brushed aluminium front ring. The wall plate requires a standard UK or\nEU single-gang back box.",
+          "relevance_score": 6.859726905822754,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": 4.113031387329102,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": 1.2812113761901855,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "# Nebula Pro Smart Thermostat - Product Handbook\n\nVersion 3.2 - Published March 2026\nModel: NB-PRO-3",
+          "relevance_score": 0.3625822067260742,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": -1.6900063753128052,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9583,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 2,
+      "question": "How long does the Nebula Pro warranty last?",
+      "answerable": true,
+      "answer": "The Nebula Pro warranty lasts 3 years from the date of purchase [Source 1]. It is a limited warranty covering defects in materials and workmanship under normal residential use [Source 1].",
+      "abstained": false,
+      "latency_s": 3.804,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": 9.010103225708008,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 12. Factory Reset\n\nTo reset the Nebula Pro to factory settings, hold the rotary dial for 15\nseconds until the LED flashes amber three times. Releasing the dial after\nthe amber pattern begins erases all schedules, Wi-Fi credentials, and the\ncalibration history. A factory reset does not deregister the device from the\nNebula Home app; use the \"remove device\" option for that.",
+          "relevance_score": 3.119647979736328,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 10. Energy Saving\n\nHalcyon's internal field study of 2,100 households found that homes using the\nNebula Pro adaptive scheduling saved up to 14% on heating bills over a full\nyear. Savings depend on insulation, climate, and how closely the household\nfollows the suggested schedules.",
+          "relevance_score": 1.7508759498596191,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 14. Companion App\n\nThe Nebula Home app is required for Wi-Fi setup and remote control. It is\navailable for iOS 16 and later and Android 12 and later. The app stores\ntemperature history for 12 months and supports geofencing, so the heating\ndrops to the away temperature when the last household member leaves.",
+          "relevance_score": 1.2716095447540283,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": 0.6486611366271973,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": false,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.8387,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 3,
+      "question": "Which smart home standard does the Nebula Pro support?",
+      "answerable": true,
+      "answer": "The Nebula Pro supports Matter 1.2 for smart home integration [Source 1].",
+      "abstained": false,
+      "latency_s": 3.878,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": 7.884869575500488,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": 5.396363258361816,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "# Nebula Pro Smart Thermostat - Product Handbook\n\nVersion 3.2 - Published March 2026\nModel: NB-PRO-3",
+          "relevance_score": 3.73903751373291,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": 3.036886215209961,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 14. Companion App\n\nThe Nebula Home app is required for Wi-Fi setup and remote control. It is\navailable for iOS 16 and later and Android 12 and later. The app stores\ntemperature history for 12 months and supports geofencing, so the heating\ndrops to the away temperature when the last household member leaves.",
+          "relevance_score": 2.9929537773132324,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9231,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 4,
+      "question": "How do I reset the Nebula Pro to factory settings?",
+      "answerable": true,
+      "answer": "To reset the Nebula Pro to factory settings, hold the rotary dial for 15 seconds until the LED flashes amber three times. Releasing the dial after the amber pattern begins erases all schedules, Wi-Fi credentials, and the calibration history [Source 1]. Note that a factory reset does not deregister the device from the Nebula Home app; you would need to use the \"remove device\" option for that [Source 1].",
+      "abstained": false,
+      "latency_s": 3.453,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 12. Factory Reset\n\nTo reset the Nebula Pro to factory settings, hold the rotary dial for 15\nseconds until the LED flashes amber three times. Releasing the dial after\nthe amber pattern begins erases all schedules, Wi-Fi credentials, and the\ncalibration history. A factory reset does not deregister the device from the\nNebula Home app; use the \"remove device\" option for that.",
+          "relevance_score": 10.250555992126465,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": -0.08224092423915863,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": -0.24584539234638214,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": -0.97032630443573,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": -1.9008054733276367,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9143,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 5,
+      "question": "What does it mean when the Nebula Pro LED blinks red five times?",
+      "answerable": true,
+      "answer": "When the Nebula Pro LED flashes red five times, it means an internal sensor fault has been detected. In that case, you should contact support and quote the error code shown in the app [Source 1].",
+      "abstained": false,
+      "latency_s": 3.843,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 13. Troubleshooting LED Codes\n\nThe status LED reports problems using blink patterns:\n\n- LED flashes red twice: the thermostat has lost its Wi-Fi connection.\n- LED flashes red five times: an internal sensor fault has been detected.\n  Contact support and quote the error code shown in the app.\n- LED flashes amber three times: a factory reset is in progress.",
+          "relevance_score": 3.409085273742676,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 12. Factory Reset\n\nTo reset the Nebula Pro to factory settings, hold the rotary dial for 15\nseconds until the LED flashes amber three times. Releasing the dial after\nthe amber pattern begins erases all schedules, Wi-Fi credentials, and the\ncalibration history. A factory reset does not deregister the device from the\nNebula Home app; use the \"remove device\" option for that.",
+          "relevance_score": 0.8883640766143799,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": -3.260486125946045,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": -3.570354461669922,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": -4.670192241668701,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.8611,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 6,
+      "question": "How much does the Nebula Pro cost on its own?",
+      "answerable": true,
+      "answer": "The Nebula Pro retails at $249 as a standalone unit [Source 1].",
+      "abstained": false,
+      "latency_s": 4.98,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 7. Pricing and Bundles\n\nThe Nebula Pro retails at $249 as a standalone unit. A bundle with two remote\ntemperature sensors retails at $329. Additional remote sensors are sold\nseparately at $45 each. A wall trim kit for larger back boxes costs $19.",
+          "relevance_score": 8.26846694946289,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": 0.4180437922477722,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 2. Physical Specifications\n\nThe Nebula Pro measures 84 mm wide, 84 mm tall and 22 mm deep, and weighs 210\ngrams without the mounting plate. The display is a 4-inch IPS panel with a\nresolution of 480 by 480 pixels. The housing is flame-retardant polycarbonate\nwith a brushed aluminium front ring. The wall plate requires a standard UK or\nEU single-gang back box.",
+          "relevance_score": 0.33574575185775757,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": -0.4389078617095947,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": -0.6858742237091064,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9167,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 7,
+      "question": "Which app is required to control the Nebula Pro?",
+      "answerable": true,
+      "answer": "The Nebula Home app is required to control the Nebula Pro [Source 1].",
+      "abstained": false,
+      "latency_s": 4.299,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 14. Companion App\n\nThe Nebula Home app is required for Wi-Fi setup and remote control. It is\navailable for iOS 16 and later and Android 12 and later. The app stores\ntemperature history for 12 months and supports geofencing, so the heating\ndrops to the away temperature when the last household member leaves.",
+          "relevance_score": 7.129131317138672,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": 6.490696907043457,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": 4.617087364196777,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 12. Factory Reset\n\nTo reset the Nebula Pro to factory settings, hold the rotary dial for 15\nseconds until the LED flashes amber three times. Releasing the dial after\nthe amber pattern begins erases all schedules, Wi-Fi credentials, and the\ncalibration history. A factory reset does not deregister the device from the\nNebula Home app; use the \"remove device\" option for that.",
+          "relevance_score": 4.590035438537598,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": 4.179003715515137,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9231,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 8,
+      "question": "What voltage does the Nebula Pro require?",
+      "answerable": true,
+      "answer": "The Nebula Pro requires 24 VAC power and must be connected to a C-wire (common wire) [Source 1]. It is designed for low-voltage HVAC systems only and is not compatible with high-voltage systems running 110 V or 240 V mains directly [Source 1].",
+      "abstained": false,
+      "latency_s": 3.783,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": 8.553436279296875,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": 5.397265434265137,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 2. Physical Specifications\n\nThe Nebula Pro measures 84 mm wide, 84 mm tall and 22 mm deep, and weighs 210\ngrams without the mounting plate. The display is a 4-inch IPS panel with a\nresolution of 480 by 480 pixels. The housing is flame-retardant polycarbonate\nwith a brushed aluminium front ring. The wall plate requires a standard UK or\nEU single-gang back box.",
+          "relevance_score": 3.864567756652832,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": 1.3535640239715576,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": -0.34515905380249023,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9565,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 9,
+      "question": "How much can households save on heating bills with the Nebula Pro?",
+      "answerable": true,
+      "answer": "Households using the Nebula Pro adaptive scheduling saved up to 14% on heating bills over a full year, according to Halcyon's internal field study of 2,100 households [Source 1]. Savings depend on insulation, climate, and how closely the household follows the suggested schedules [Source 1].",
+      "abstained": false,
+      "latency_s": 3.955,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 10. Energy Saving\n\nHalcyon's internal field study of 2,100 households found that homes using the\nNebula Pro adaptive scheduling saved up to 14% on heating bills over a full\nyear. Savings depend on insulation, climate, and how closely the household\nfollows the suggested schedules.",
+          "relevance_score": 8.703521728515625,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 7. Pricing and Bundles\n\nThe Nebula Pro retails at $249 as a standalone unit. A bundle with two remote\ntemperature sensors retails at $329. Additional remote sensors are sold\nseparately at $45 each. A wall trim kit for larger back boxes costs $19.",
+          "relevance_score": 2.5786993503570557,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": 0.5371174216270447,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": -1.9627392292022705,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": -2.5371522903442383,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9348,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 10,
+      "question": "How many temperature schedules per day does the Nebula Pro support?",
+      "answerable": true,
+      "answer": "The Nebula Pro supports up to eight temperature schedules per day, each with its own target temperature [Source 1].",
+      "abstained": false,
+      "latency_s": 3.42,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": 10.304765701293945,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 10. Energy Saving\n\nHalcyon's internal field study of 2,100 households found that homes using the\nNebula Pro adaptive scheduling saved up to 14% on heating bills over a full\nyear. Savings depend on insulation, climate, and how closely the household\nfollows the suggested schedules.",
+          "relevance_score": 2.8455934524536133,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": 0.8311594724655151,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": -0.30773794651031494,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 7. Pricing and Bundles\n\nThe Nebula Pro retails at $249 as a standalone unit. A bundle with two remote\ntemperature sensors retails at $329. Additional remote sensors are sold\nseparately at $45 each. A wall trim kit for larger back boxes costs $19.",
+          "relevance_score": -0.4453134536743164,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9474,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 11,
+      "question": "How long did the Project Meridian field study run?",
+      "answerable": true,
+      "answer": "The Project Meridian study ran for 13 weeks, from June 2 to August 29, 2025 [Source 1].",
+      "abstained": false,
+      "latency_s": 3.777,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": 8.382862091064453,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "# Project Meridian - Research Notes\n\nKestrel Agricultural Institute - Field Science Division\nStudy period: Q3 2025",
+          "relevance_score": 2.3495352268218994,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 10. Energy Saving\n\nHalcyon's internal field study of 2,100 households found that homes using the\nNebula Pro adaptive scheduling saved up to 14% on heating bills over a full\nyear. Savings depend on insulation, climate, and how closely the household\nfollows the suggested schedules.",
+          "relevance_score": -9.73151969909668,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Funding and Personnel\n\nThe work was supported by a $120,000 grant from the GreenAcre Foundation\n(grant number GA-2025-114). The lead researcher was Dr. Lena Okafor, with\nfield coordination by Marcus Webb and sensor engineering by Priya Raman. Two\ngraduate interns from the institute's agronomy programme assisted with plot\nmeasurements.",
+          "relevance_score": -9.805302619934082,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 8. Installation\n\nInstallation takes approximately 30 minutes. The mounting procedure is:\nswitch off the heating circuit, label the existing wires, attach the wall\nplate, connect the wires to the labelled terminals, and clip the display unit\nonto the plate. The thermostat automatically detects the connected system\ntype during first power-on.",
+          "relevance_score": -10.261382102966309,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9412,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 12,
+      "question": "How often did the SM-100 sensor record soil moisture?",
+      "answerable": true,
+      "answer": "The SM-100 sensor recorded volumetric water content every 15 minutes [Source 1].",
+      "abstained": false,
+      "latency_s": 3.994,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Equipment\n\nEach managed plot was fitted with an SM-100 soil dielectric moisture sensor\nburied 25 cm deep in the root zone. The sensor recorded volumetric water\ncontent every 15 minutes and transmitted readings over LoRaWAN to a local\ngateway. Control plots were irrigated on the farm's traditional schedule with\nno sensing equipment.",
+          "relevance_score": 7.820957183837891,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": -1.7944166660308838,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Publication\n\nA manuscript describing the trial was submitted to the Journal of Applied\nAgronomy in October 2025 under the title \"Soil moisture sensing as an early\ndrought warning system in medium-scale maize farming\". A follow-up trial\ncovering a full growing season is planned for 2026, pending additional\nfunding.",
+          "relevance_score": -4.972211837768555,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Early Stress Detection\n\nThe most striking observation was an early warning effect: the sensor network\ndetected the onset of drought stress 9 days before visual symptoms such as\nleaf rolling appeared in the control plots. This lead time allowed targeted\nirrigation that avoided a projected yield loss during the July heatwave.",
+          "relevance_score": -7.600600719451904,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Irrigation Protocol\n\nSensor-managed plots were irrigated only when the average volumetric water\ncontent of the top 40 cm fell below a threshold set at 35 percent of field\ncapacity. Control plots followed each farm's conventional calendar. Irrigation\nevents and volumes were logged automatically by the farm gate controllers.",
+          "relevance_score": -7.795581340789795,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9231,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 13,
+      "question": "What was the average yield improvement in the sensor-managed plots?",
+      "answerable": true,
+      "answer": "The average yield improvement in sensor-managed plots was 11.4% compared to the paired controls, measured as dry grain mass per hectare at harvest [Source 1].",
+      "abstained": false,
+      "latency_s": 4.004,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Results\n\nThe average yield improvement in sensor-managed plots was 11.4% compared to\nthe paired controls, measured as dry grain mass per hectare at harvest. Water\nuse in sensor-managed plots fell by 23% over the same period. The largest\nrelative gain appeared on Farm B, where the silty clay loam drained fastest\nbetween irrigation events.",
+          "relevance_score": 10.201519012451172,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Irrigation Protocol\n\nSensor-managed plots were irrigated only when the average volumetric water\ncontent of the top 40 cm fell below a threshold set at 35 percent of field\ncapacity. Control plots followed each farm's conventional calendar. Irrigation\nevents and volumes were logged automatically by the farm gate controllers.",
+          "relevance_score": 2.2199642658233643,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Experimental Design\n\nThe trial used 48 experimental plots in total: 24 sensor-managed plots and 24\ncontrol plots, matched in pairs by soil type and crop variety. The plots were\nsplit across three farms: Farm A on sandy loam, Farm B on silty clay loam, and\nFarm C on clay. Each plot measured 0.4 hectares and was planted with the same\ndrought-tolerant maize hybrid.",
+          "relevance_score": 0.7907412052154541,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Equipment\n\nEach managed plot was fitted with an SM-100 soil dielectric moisture sensor\nburied 25 cm deep in the root zone. The sensor recorded volumetric water\ncontent every 15 minutes and transmitted readings over LoRaWAN to a local\ngateway. Control plots were irrigated on the farm's traditional schedule with\nno sensing equipment.",
+          "relevance_score": -1.080352544784546,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Statistical Analysis\n\nData were analysed with a mixed-effects model treating farm as a random\neffect and irrigation strategy as a fixed effect. The yield difference was\nsignificant at p < 0.01. A sensitivity analysis excluding the heatwave week\nreduced the yield improvement estimate to 8.2%, which remains significant at\np < 0.05.",
+          "relevance_score": -2.9337804317474365,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.963,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 14,
+      "question": "How much less water did the sensor-managed plots use?",
+      "answerable": true,
+      "answer": "Water use in sensor-managed plots fell by 23% [Source 1].",
+      "abstained": false,
+      "latency_s": 3.898,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Results\n\nThe average yield improvement in sensor-managed plots was 11.4% compared to\nthe paired controls, measured as dry grain mass per hectare at harvest. Water\nuse in sensor-managed plots fell by 23% over the same period. The largest\nrelative gain appeared on Farm B, where the silty clay loam drained fastest\nbetween irrigation events.",
+          "relevance_score": 6.234620094299316,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Irrigation Protocol\n\nSensor-managed plots were irrigated only when the average volumetric water\ncontent of the top 40 cm fell below a threshold set at 35 percent of field\ncapacity. Control plots followed each farm's conventional calendar. Irrigation\nevents and volumes were logged automatically by the farm gate controllers.",
+          "relevance_score": 4.581427574157715,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Equipment\n\nEach managed plot was fitted with an SM-100 soil dielectric moisture sensor\nburied 25 cm deep in the root zone. The sensor recorded volumetric water\ncontent every 15 minutes and transmitted readings over LoRaWAN to a local\ngateway. Control plots were irrigated on the farm's traditional schedule with\nno sensing equipment.",
+          "relevance_score": 2.984302043914795,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Experimental Design\n\nThe trial used 48 experimental plots in total: 24 sensor-managed plots and 24\ncontrol plots, matched in pairs by soil type and crop variety. The plots were\nsplit across three farms: Farm A on sandy loam, Farm B on silty clay loam, and\nFarm C on clay. Each plot measured 0.4 hectares and was planted with the same\ndrought-tolerant maize hybrid.",
+          "relevance_score": 0.8174960613250732,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": -4.409152984619141,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9091,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 15,
+      "question": "How early could the sensors detect drought stress before visual symptoms?",
+      "answerable": true,
+      "answer": "The sensor network detected the onset of drought stress 9 days before visual symptoms such as leaf rolling appeared in the control plots [Source 1].",
+      "abstained": false,
+      "latency_s": 4.294,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Early Stress Detection\n\nThe most striking observation was an early warning effect: the sensor network\ndetected the onset of drought stress 9 days before visual symptoms such as\nleaf rolling appeared in the control plots. This lead time allowed targeted\nirrigation that avoided a projected yield loss during the July heatwave.",
+          "relevance_score": 9.840978622436523,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Publication\n\nA manuscript describing the trial was submitted to the Journal of Applied\nAgronomy in October 2025 under the title \"Soil moisture sensing as an early\ndrought warning system in medium-scale maize farming\". A follow-up trial\ncovering a full growing season is planned for 2026, pending additional\nfunding.",
+          "relevance_score": -5.391997337341309,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": -7.286454677581787,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 11. Sensors and Accuracy\n\nThe built-in temperature sensor is accurate to plus or minus 0.3 degrees\nCelsius, and the humidity sensor to plus or minus 2 percent. Two remote\nsensor jacks are available for rooms with uneven heating. The thermostat\naverages the readings of all connected sensors when more than one is\ndetected.",
+          "relevance_score": -9.633641242980957,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Experimental Design\n\nThe trial used 48 experimental plots in total: 24 sensor-managed plots and 24\ncontrol plots, matched in pairs by soil type and crop variety. The plots were\nsplit across three farms: Farm A on sandy loam, Farm B on silty clay loam, and\nFarm C on clay. Each plot measured 0.4 hectares and was planted with the same\ndrought-tolerant maize hybrid.",
+          "relevance_score": -10.399499893188477,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.96,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 16,
+      "question": "Which organisation funded Project Meridian?",
+      "answerable": true,
+      "answer": "The work was supported by a $120,000 grant from the GreenAcre Foundation (grant number GA-2025-114) [Source 3].",
+      "abstained": false,
+      "latency_s": 3.535,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "# Project Meridian - Research Notes\n\nKestrel Agricultural Institute - Field Science Division\nStudy period: Q3 2025",
+          "relevance_score": 1.5670082569122314,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": -1.8114476203918457,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Funding and Personnel\n\nThe work was supported by a $120,000 grant from the GreenAcre Foundation\n(grant number GA-2025-114). The lead researcher was Dr. Lena Okafor, with\nfield coordination by Marcus Webb and sensor engineering by Priya Raman. Two\ngraduate interns from the institute's agronomy programme assisted with plot\nmeasurements.",
+          "relevance_score": -5.421144485473633,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Publication\n\nA manuscript describing the trial was submitted to the Journal of Applied\nAgronomy in October 2025 under the title \"Soil moisture sensing as an early\ndrought warning system in medium-scale maize farming\". A follow-up trial\ncovering a full growing season is planned for 2026, pending additional\nfunding.",
+          "relevance_score": -10.994718551635742,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": -11.262540817260742,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 3,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.95,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 17,
+      "question": "Who was the lead researcher on Project Meridian?",
+      "answerable": true,
+      "answer": "The lead researcher on Project Meridian was Dr. Lena Okafor [Source 1].",
+      "abstained": false,
+      "latency_s": 4.304,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Funding and Personnel\n\nThe work was supported by a $120,000 grant from the GreenAcre Foundation\n(grant number GA-2025-114). The lead researcher was Dr. Lena Okafor, with\nfield coordination by Marcus Webb and sensor engineering by Priya Raman. Two\ngraduate interns from the institute's agronomy programme assisted with plot\nmeasurements.",
+          "relevance_score": 3.3518710136413574,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "# Project Meridian - Research Notes\n\nKestrel Agricultural Institute - Field Science Division\nStudy period: Q3 2025",
+          "relevance_score": 0.6105624437332153,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": -0.9118129014968872,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Early Stress Detection\n\nThe most striking observation was an early warning effect: the sensor network\ndetected the onset of drought stress 9 days before visual symptoms such as\nleaf rolling appeared in the control plots. This lead time allowed targeted\nirrigation that avoided a projected yield loss during the July heatwave.",
+          "relevance_score": -11.253217697143555,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": -11.310465812683105,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9167,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 18,
+      "question": "When is the Lumen support desk open?",
+      "answerable": true,
+      "answer": "The Lumen support desk operates Monday to Friday from 08:00 to 20:00 Central European Time (CET) [Source 4]. Outside these hours, coverage is limited to emergency incidents only, and weekend staffing is reserved for incidents classified as critical [Source 4].\n\nLive chat is staffed from 09:00 to 17:00 CET on weekdays, and email is monitored continuously during support hours [Source 2].",
+      "abstained": false,
+      "latency_s": 3.678,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": 4.411423683166504,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "3. CONTACT CHANNELS\n\nSupport is available by email at support@lumen.example.com, through the\nin-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed\nfrom 09:00 to 17:00 CET on weekdays. Email is monitored continuously during\nsupport hours.",
+          "relevance_score": 3.3380751609802246,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": 1.5369817018508911,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "1. SUPPORT HOURS\n\nOur support desk operates Monday to Friday from 08:00 to 20:00 Central\nEuropean Time (CET). Outside these hours, coverage is limited to emergency\nincidents only. Weekend staffing is reserved for incidents classified as\ncritical, defined as a complete outage of the workspace or data loss.",
+          "relevance_score": 0.551091194152832,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance.",
+          "relevance_score": -4.738255500793457,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 4,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9538,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 19,
+      "question": "What is Lumen's refund window?",
+      "answerable": true,
+      "answer": "Lumen offers a full refund within 30 days of purchase, no questions asked [Source 5].",
+      "abstained": false,
+      "latency_s": 4.518,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance.",
+          "relevance_score": -4.406097412109375,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": -4.77632999420166,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": -5.178025245666504,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "3. CONTACT CHANNELS\n\nSupport is available by email at support@lumen.example.com, through the\nin-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed\nfrom 09:00 to 17:00 CET on weekdays. Email is monitored continuously during\nsupport hours.",
+          "relevance_score": -7.8308563232421875,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "4. REFUNDS\n\nCustomers are entitled to a full refund within 30 days of purchase, no\nquestions asked. Refunds are processed to the original payment method\nwithin 5 business days of the request. After the first 30 days, unused\ncredit on annual plans can be converted to account credit.",
+          "relevance_score": -8.363655090332031,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 5,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.8667,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 20,
+      "question": "How quickly does Lumen respond to critical incidents?",
+      "answerable": true,
+      "answer": "Critical incidents receive a first response within 2 hours, around the clock [Source 1]. Priority customers receive a guaranteed first response within 30 minutes for critical incidents [Source 2].",
+      "abstained": false,
+      "latency_s": 4.792,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "2. RESPONSE TIMES\n\nCritical incidents receive a first response within 2 hours, around the\nclock. Standard incidents receive a first response within 1 business day.\nLow-priority questions receive a first response within 3 business days.\nThese targets are measured from the moment a ticket is created in the\nsupport portal.",
+          "relevance_score": 5.0166215896606445,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "6. PRIORITY SUPPORT\n\nPriority support is available for $15 per month per workspace. Priority\ncustomers receive a guaranteed first response within 30 minutes for\ncritical incidents and a dedicated support engineer familiar with their\nworkspace configuration.",
+          "relevance_score": -0.27526164054870605,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": -6.567080497741699,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "3. CONTACT CHANNELS\n\nSupport is available by email at support@lumen.example.com, through the\nin-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed\nfrom 09:00 to 17:00 CET on weekdays. Email is monitored continuously during\nsupport hours.",
+          "relevance_score": -6.684858322143555,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": -7.075316429138184,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.931,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 21,
+      "question": "What is the Lumen support email address?",
+      "answerable": true,
+      "answer": "The Lumen support email address is support@lumen.example.com [Source 1].",
+      "abstained": false,
+      "latency_s": 3.613,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "3. CONTACT CHANNELS\n\nSupport is available by email at support@lumen.example.com, through the\nin-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed\nfrom 09:00 to 17:00 CET on weekdays. Email is monitored continuously during\nsupport hours.",
+          "relevance_score": 6.337380409240723,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": 0.4833196699619293,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": -0.30381226539611816,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance.",
+          "relevance_score": -5.493237495422363,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "1. SUPPORT HOURS\n\nOur support desk operates Monday to Friday from 08:00 to 20:00 Central\nEuropean Time (CET). Outside these hours, coverage is limited to emergency\nincidents only. Weekend staffing is reserved for incidents classified as\ncritical, defined as a complete outage of the workspace or data loss.",
+          "relevance_score": -10.163141250610352,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.8333,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 22,
+      "question": "What monthly uptime does Lumen guarantee?",
+      "answerable": true,
+      "answer": "Lumen guarantees 99.5% monthly uptime, measured across all production regions [Source 1].",
+      "abstained": false,
+      "latency_s": 3.468,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance.",
+          "relevance_score": 8.64642333984375,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": -1.9412877559661865,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "3. CONTACT CHANNELS\n\nSupport is available by email at support@lumen.example.com, through the\nin-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed\nfrom 09:00 to 17:00 CET on weekdays. Email is monitored continuously during\nsupport hours.",
+          "relevance_score": -2.015028476715088,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": -6.695200443267822,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "6. PRIORITY SUPPORT\n\nPriority support is available for $15 per month per workspace. Priority\ncustomers receive a guaranteed first response within 30 minutes for\ncritical incidents and a dedicated support engineer familiar with their\nworkspace configuration.",
+          "relevance_score": -7.823956489562988,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": 1,
+      "correctness_keyword": true,
+      "correctness_judge": true,
+      "faithfulness_overlap": 0.9231,
+      "faithfulness_judge": true,
+      "error": null
+    },
+    {
+      "id": 23,
+      "question": "What is the capital of Bhutan?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.36,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "2. RESPONSE TIMES\n\nCritical incidents receive a first response within 2 hours, around the\nclock. Standard incidents receive a first response within 1 business day.\nLow-priority questions receive a first response within 3 business days.\nThese targets are measured from the moment a ticket is created in the\nsupport portal.",
+          "relevance_score": -11.179475784301758,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Publication\n\nA manuscript describing the trial was submitted to the Journal of Applied\nAgronomy in October 2025 under the title \"Soil moisture sensing as an early\ndrought warning system in medium-scale maize farming\". A follow-up trial\ncovering a full growing season is planned for 2026, pending additional\nfunding.",
+          "relevance_score": -11.183050155639648,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance.",
+          "relevance_score": -11.24124813079834,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 15. Regulatory and Environment\n\nThe device is certified for CE and UKCA markets. Operating range is minus 20\nto plus 50 degrees Celsius at up to 90 percent relative humidity,\nnon-condensing. The packaging is 100 percent recycled cardboard and the\ndevice contains no mercury.",
+          "relevance_score": -11.248870849609375,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "4. REFUNDS\n\nCustomers are entitled to a full refund within 30 days of purchase, no\nquestions asked. Refunds are processed to the original payment method\nwithin 5 business days of the request. After the first 30 days, unused\ncredit on annual plans can be converted to account credit.",
+          "relevance_score": -11.25139045715332,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 24,
+      "question": "Does the Nebula Pro work with Apple HomeKit?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.702,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": 5.703220367431641,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 12. Factory Reset\n\nTo reset the Nebula Pro to factory settings, hold the rotary dial for 15\nseconds until the LED flashes amber three times. Releasing the dial after\nthe amber pattern begins erases all schedules, Wi-Fi credentials, and the\ncalibration history. A factory reset does not deregister the device from the\nNebula Home app; use the \"remove device\" option for that.",
+          "relevance_score": 3.3823904991149902,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": 2.7910244464874268,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 14. Companion App\n\nThe Nebula Home app is required for Wi-Fi setup and remote control. It is\navailable for iOS 16 and later and Android 12 and later. The app stores\ntemperature history for 12 months and supports geofencing, so the heating\ndrops to the away temperature when the last household member leaves.",
+          "relevance_score": 2.7858128547668457,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": 2.4188406467437744,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 25,
+      "question": "What is the warranty period for an Apple iPhone 15?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.421,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 6. Warranty\n\nEvery Nebula Pro carries a 3-year limited warranty from the date of purchase.\nThe warranty covers defects in materials and workmanship under normal\nresidential use. To activate the full coverage, register the device in the\nNebula Home app within 30 days of purchase. Damage caused by incorrect\nwiring, water ingress, or third-party accessories is excluded.",
+          "relevance_score": -6.565657615661621,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 15. Regulatory and Environment\n\nThe device is certified for CE and UKCA markets. Operating range is minus 20\nto plus 50 degrees Celsius at up to 90 percent relative humidity,\nnon-condensing. The packaging is 100 percent recycled cardboard and the\ndevice contains no mercury.",
+          "relevance_score": -9.918097496032715,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 14. Companion App\n\nThe Nebula Home app is required for Wi-Fi setup and remote control. It is\navailable for iOS 16 and later and Android 12 and later. The app stores\ntemperature history for 12 months and supports geofencing, so the heating\ndrops to the away temperature when the last household member leaves.",
+          "relevance_score": -10.735584259033203,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "7. DATA RETENTION\n\nAfter cancellation, workspace data is retained for 90 days, during which\ncustomers can export their content. After 90 days the data is permanently\ndeleted from all production systems and backups.",
+          "relevance_score": -10.972807884216309,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "6. PRIORITY SUPPORT\n\nPriority support is available for $15 per month per workspace. Priority\ncustomers receive a guaranteed first response within 30 minutes for\ncritical incidents and a dedicated support engineer familiar with their\nworkspace configuration.",
+          "relevance_score": -11.029374122619629,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 26,
+      "question": "What were OpenAI's Q4 2025 earnings?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.198,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "# Project Meridian - Research Notes\n\nKestrel Agricultural Institute - Field Science Division\nStudy period: Q3 2025",
+          "relevance_score": -8.419265747070312,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Funding and Personnel\n\nThe work was supported by a $120,000 grant from the GreenAcre Foundation\n(grant number GA-2025-114). The lead researcher was Dr. Lena Okafor, with\nfield coordination by Marcus Webb and sensor engineering by Priya Raman. Two\ngraduate interns from the institute's agronomy programme assisted with plot\nmeasurements.",
+          "relevance_score": -10.760810852050781,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Publication\n\nA manuscript describing the trial was submitted to the Journal of Applied\nAgronomy in October 2025 under the title \"Soil moisture sensing as an early\ndrought warning system in medium-scale maize farming\". A follow-up trial\ncovering a full growing season is planned for 2026, pending additional\nfunding.",
+          "relevance_score": -10.978004455566406,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": -11.10058879852295,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Study Overview\n\nProject Meridian investigated whether continuous soil moisture sensing could\nreduce water use without lowering crop yield on medium-sized farms. The study\nran for 13 weeks, from June 2 to August 29, 2025, across three farms in the\ncentral valley region.",
+          "relevance_score": -11.235231399536133,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 27,
+      "question": "Who wrote the novel Moby-Dick?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.466,
+      "sources": [
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Funding and Personnel\n\nThe work was supported by a $120,000 grant from the GreenAcre Foundation\n(grant number GA-2025-114). The lead researcher was Dr. Lena Okafor, with\nfield coordination by Marcus Webb and sensor engineering by Priya Raman. Two\ngraduate interns from the institute's agronomy programme assisted with plot\nmeasurements.",
+          "relevance_score": -11.031457901000977,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 11. Sensors and Accuracy\n\nThe built-in temperature sensor is accurate to plus or minus 0.3 degrees\nCelsius, and the humidity sensor to plus or minus 2 percent. Two remote\nsensor jacks are available for rooms with uneven heating. The thermostat\naverages the readings of all connected sensors when more than one is\ndetected.",
+          "relevance_score": -11.12983512878418,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 8. Installation\n\nInstallation takes approximately 30 minutes. The mounting procedure is:\nswitch off the heating circuit, label the existing wires, attach the wall\nplate, connect the wires to the labelled terminals, and clip the display unit\nonto the plate. The thermostat automatically detects the connected system\ntype during first power-on.",
+          "relevance_score": -11.153351783752441,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Early Stress Detection\n\nThe most striking observation was an early warning effect: the sensor network\ndetected the onset of drought stress 9 days before visual symptoms such as\nleaf rolling appeared in the control plots. This lead time allowed targeted\nirrigation that avoided a projected yield loss during the July heatwave.",
+          "relevance_score": -11.157716751098633,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": -11.158453941345215,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 28,
+      "question": "What is the airspeed velocity of an unladen swallow?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.351,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 2. Physical Specifications\n\nThe Nebula Pro measures 84 mm wide, 84 mm tall and 22 mm deep, and weighs 210\ngrams without the mounting plate. The display is a 4-inch IPS panel with a\nresolution of 480 by 480 pixels. The housing is flame-retardant polycarbonate\nwith a brushed aluminium front ring. The wall plate requires a standard UK or\nEU single-gang back box.",
+          "relevance_score": -11.333372116088867,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 15. Regulatory and Environment\n\nThe device is certified for CE and UKCA markets. Operating range is minus 20\nto plus 50 degrees Celsius at up to 90 percent relative humidity,\nnon-condensing. The packaging is 100 percent recycled cardboard and the\ndevice contains no mercury.",
+          "relevance_score": -11.363607406616211,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 1. Product Overview\n\nThe Nebula Pro Smart Thermostat is a wall-mounted climate controller designed\nfor residential heating systems. It combines a rotary dial with a 4-inch\ntouchscreen and learns the household's routine over a two-week calibration\nperiod. The unit is manufactured by Halcyon Home Systems and sold through\nauthorised retailers and the Halcyon online store.",
+          "relevance_score": -11.382061004638672,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 11. Sensors and Accuracy\n\nThe built-in temperature sensor is accurate to plus or minus 0.3 degrees\nCelsius, and the humidity sensor to plus or minus 2 percent. Two remote\nsensor jacks are available for rooms with uneven heating. The thermostat\naverages the readings of all connected sensors when more than one is\ndetected.",
+          "relevance_score": -11.390381813049316,
+          "page_number": null
+        },
+        {
+          "document_id": "7d2658c5-81ac-46f9-a870-7a5af2020d6d",
+          "document_name": "meridian_research_notes.md",
+          "chunk_text": "## Equipment\n\nEach managed plot was fitted with an SM-100 soil dielectric moisture sensor\nburied 25 cm deep in the root zone. The sensor recorded volumetric water\ncontent every 15 minutes and transmitted readings over LoRaWAN to a local\ngateway. Control plots were irrigated on the farm's traditional schedule with\nno sensing equipment.",
+          "relevance_score": -11.41049575805664,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 29,
+      "question": "Does the Nebula Pro support 5G cellular connectivity?",
+      "answerable": false,
+      "answer": "I couldn't find that in your documents.",
+      "abstained": true,
+      "latency_s": 3.416,
+      "sources": [
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 4. Connectivity\n\nThe Nebula Pro supports Wi-Fi 2.4 GHz (802.11 b/g/n), Bluetooth Low Energy 5.1\nfor proximity sensing, and Matter 1.2 for smart home integration. It works\nwith Google Home and Amazon Alexa ecosystems. Matter commissioning requires\nthe Nebula Home app version 4.0 or later. The device does not use the 5 GHz\nWi-Fi band; routers with band steering should create a separate 2.4 GHz SSID\nduring setup.",
+          "relevance_score": 7.463667869567871,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 3. Electrical Requirements\n\nThe Nebula Pro is designed for low-voltage HVAC systems only. It must be\nconnected to 24 VAC power and requires a C-wire (common wire). It is NOT\ncompatible with high-voltage systems running 110 V or 240 V mains directly.\nInstalling the unit on a high-voltage circuit will permanently damage the\ndevice and voids the warranty. A licensed electrician should perform the\ninstallation if a C-wire is not present at the thermostat location.",
+          "relevance_score": 0.04702380299568176,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 9. Scheduling\n\nThe Nebula Pro supports up to eight temperature schedules per day, each with\nits own target temperature. Schedules can be copied between weekdays and\nweekends in the app. A holiday mode holds a fixed temperature for a chosen\nnumber of days.",
+          "relevance_score": -1.013561487197876,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 2. Physical Specifications\n\nThe Nebula Pro measures 84 mm wide, 84 mm tall and 22 mm deep, and weighs 210\ngrams without the mounting plate. The display is a 4-inch IPS panel with a\nresolution of 480 by 480 pixels. The housing is flame-retardant polycarbonate\nwith a brushed aluminium front ring. The wall plate requires a standard UK or\nEU single-gang back box.",
+          "relevance_score": -2.812601089477539,
+          "page_number": null
+        },
+        {
+          "document_id": "6fbcd077-d00d-41c9-903d-6f3c120e4fd6",
+          "document_name": "nebula_pro_handbook.md",
+          "chunk_text": "## 14. Companion App\n\nThe Nebula Home app is required for Wi-Fi setup and remote control. It is\navailable for iOS 16 and later and Android 12 and later. The app stores\ntemperature history for 12 months and supports geofencing, so the heating\ndrops to the away temperature when the last household member leaves.",
+          "relevance_score": -3.1923141479492188,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    },
+    {
+      "id": 30,
+      "question": "What discount code do I need for the Lumen loyalty program?",
+      "answerable": false,
+      "answer": "\ud83e\udd16 **AI Assistant** (Processing Issue)\n\n**Your Question:** What discount code do I need for the Lumen loyalty program?\n\nI encountered a temporary issue connecting to the full AI service, but I found relevant information:\n\n\ud83d\udcda **Relevant Content:**\n\n**From lumen_support_policy.txt:**\n5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance....\n\n**From lumen_support_policy.txt:**\nLUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1...\n\n\n\ud83d\udca1 Please try asking again in a moment for a complete AI-analyzed answer!",
+      "abstained": false,
+      "latency_s": 33.098,
+      "sources": [
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "5. SERVICE LEVEL AGREEMENT\n\nLumen guarantees 99.5% monthly uptime, measured across all production\nregions. If uptime falls below this figure in a calendar month, affected\ncustomers receive account credit equal to 10% of their monthly fee for each\nfull hour of downtime beyond the allowance.",
+          "relevance_score": -2.8546981811523438,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "LUMEN SUPPORT POLICY\nEffective date: 1 January 2026\nVersion 4.1",
+          "relevance_score": -3.6101670265197754,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "3. CONTACT CHANNELS\n\nSupport is available by email at support@lumen.example.com, through the\nin-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed\nfrom 09:00 to 17:00 CET on weekdays. Email is monitored continuously during\nsupport hours.",
+          "relevance_score": -4.084678649902344,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "9. SERVICE REGIONS\n\nLumen production data is hosted in the European Union, with a secondary\nregion in Canada for disaster recovery. Customers can request a data\nprocessing agreement from the support desk at any time.",
+          "relevance_score": -6.777379035949707,
+          "page_number": null
+        },
+        {
+          "document_id": "b388c07c-1925-42ba-972c-8304438a413a",
+          "document_name": "lumen_support_policy.txt",
+          "chunk_text": "6. PRIORITY SUPPORT\n\nPriority support is available for $15 per month per workspace. Priority\ncustomers receive a guaranteed first response within 30 minutes for\ncritical incidents and a dedicated support engineer familiar with their\nworkspace configuration.",
+          "relevance_score": -11.320009231567383,
+          "page_number": null
+        }
+      ],
+      "evidence_rank": null,
+      "correctness_keyword": null,
+      "correctness_judge": null,
+      "faithfulness_overlap": null,
+      "faithfulness_judge": null,
+      "error": null
+    }
+  ]
+}

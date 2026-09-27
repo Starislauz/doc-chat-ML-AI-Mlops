@@ -4,7 +4,11 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from typing import List, Dict, Optional
 from sentence_transformers import SentenceTransformer
+import hashlib
+import math
+import re
 import uuid
+from collections import Counter, OrderedDict
 from datetime import datetime
 
 from ..config.settings import settings
@@ -22,6 +26,12 @@ class VectorStore:
         self.collection = None
         self.image_collection = None
         self.embedding_model = None
+        # In-process embedding cache: the same text is never encoded twice.
+        # Keyed by normalisation flag + text hash; bounded, FIFO-evicted.
+        self._embedding_cache: "OrderedDict[str, List[float]]" = OrderedDict()
+        self._embedding_cache_max = 2048
+        self.embedding_cache_hits = 0
+        self.embedding_cache_misses = 0
         logger.info("VectorStore initialized (lazy loading)")
     
     def initialize(self):
@@ -57,13 +67,84 @@ class VectorStore:
         logger.info(f"Image collection size: {self.image_collection.count()}")
     
     def load_embedding_model(self):
-        """Load sentence transformer model for embeddings"""
+        """Load the sentence-transformer embedding model.
+
+        Offline-first: a cached model loads without any network call, so a
+        DNS blip cannot break search.
+        """
         if self.embedding_model is not None:
             return
         
         logger.info(f"Loading embedding model: {settings.embedding_model}")
-        self.embedding_model = SentenceTransformer(settings.embedding_model)
+        try:
+            self.embedding_model = SentenceTransformer(
+                settings.embedding_model, local_files_only=True
+            )
+        except KeyboardInterrupt:
+            raise
+        except Exception as local_error:
+            logger.warning(
+                f"Embedding model not in local cache ({local_error}); downloading..."
+            )
+            self.embedding_model = SentenceTransformer(settings.embedding_model)
         logger.info("Embedding model loaded successfully")
+    
+    @staticmethod
+    def _embedding_cache_key(text: str, normalize_embeddings: bool) -> str:
+        digest = hashlib.sha1(text.encode("utf-8")).hexdigest()
+        return f"{int(normalize_embeddings)}:{digest}"
+    
+    def _encode(
+        self,
+        texts: List[str],
+        normalize_embeddings: bool = False
+    ) -> List[List[float]]:
+        """Encode texts, reusing cached vectors for identical inputs.
+
+        Cuts cost and latency: repeated queries and re-uploaded documents never
+        reach the model twice.
+        """
+        if self.embedding_model is None:
+            raise RuntimeError("Embedding model unavailable")
+        
+        results: List[Optional[List[float]]] = [None] * len(texts)
+        pending = []
+        
+        for index, text in enumerate(texts):
+            key = self._embedding_cache_key(text, normalize_embeddings)
+            cached = self._embedding_cache.get(key)
+            if cached is not None:
+                self._embedding_cache.move_to_end(key)
+                self.embedding_cache_hits += 1
+                results[index] = cached
+            else:
+                pending.append((index, key, text))
+        
+        if pending:
+            vectors = self.embedding_model.encode(
+                [item[2] for item in pending],
+                normalize_embeddings=normalize_embeddings,
+            )
+            for (index, key, _), vector in zip(pending, vectors):
+                as_list = [float(x) for x in vector]
+                results[index] = as_list
+                self.embedding_cache_misses += 1
+                self._embedding_cache[key] = as_list
+                self._embedding_cache.move_to_end(key)
+            while len(self._embedding_cache) > self._embedding_cache_max:
+                self._embedding_cache.popitem(last=False)
+        
+        return results
+    
+    def embedding_cache_stats(self) -> Dict:
+        total = self.embedding_cache_hits + self.embedding_cache_misses
+        return {
+            "entries": len(self._embedding_cache),
+            "max_entries": self._embedding_cache_max,
+            "hits": self.embedding_cache_hits,
+            "misses": self.embedding_cache_misses,
+            "hit_rate": round(self.embedding_cache_hits / total, 3) if total else 0.0,
+        }
     
     def add_document(
         self,
@@ -95,8 +176,8 @@ class VectorStore:
         
         logger.info(f"Adding {len(chunks)} chunks for document {document_id}")
         
-        # Generate embeddings
-        embeddings = self.embedding_model.encode(chunks).tolist()
+        # Generate embeddings (cached: identical text is never encoded twice)
+        embeddings = self._encode(chunks)
         
         # Prepare metadata for each chunk
         chunk_ids = []
@@ -152,10 +233,16 @@ class VectorStore:
         self.initialize()
         self.load_embedding_model()
         
+        if self.embedding_model is None:
+            raise RuntimeError(
+                "Embedding model unavailable - check the server log for the "
+                "model download error"
+            )
+        
         logger.info(f"Searching for: '{query}' (user: {user_id}, top_k: {top_k})")
         
-        # Generate query embedding
-        query_embedding = self.embedding_model.encode([query])[0].tolist()
+        # Generate query embedding (cached)
+        query_embedding = self._encode([query])[0]
         
         # Build where filter for user isolation
         where_filter = {"user_id": str(user_id)}
@@ -194,6 +281,153 @@ class VectorStore:
         
         logger.info(f"Found {len(formatted_results)} results")
         return formatted_results
+    
+    # ------------------------------------------------------------------
+    # Hybrid search (vector + BM25 keyword, fused with RRF)
+    # ------------------------------------------------------------------
+    
+    @staticmethod
+    def _tokenize(text: str) -> List[str]:
+        """Lowercase alphanumeric tokenization for keyword matching."""
+        return re.findall(r"[a-z0-9]+", (text or "").lower())
+    
+    def _bm25_search(
+        self,
+        query: str,
+        user_id: int,
+        document_ids: Optional[List[str]] = None,
+        limit: int = 10
+    ) -> List[Dict]:
+        """
+        Lightweight BM25 keyword search over the user's chunks.
+
+        Fine for small corpora (thousands of chunks or fewer). Catches the
+        exact names, IDs and codes that pure vector search misses.
+        """
+        where_filter = {"user_id": str(user_id)}
+        if document_ids:
+            where_filter = {
+                "$and": [
+                    {"user_id": str(user_id)},
+                    {"document_id": {"$in": document_ids}}
+                ]
+            }
+        
+        data = self.collection.get(
+            where=where_filter,
+            include=["documents", "metadatas"]
+        )
+        ids = data.get("ids") or []
+        docs = data.get("documents") or []
+        metas = data.get("metadatas") or []
+        if not ids:
+            return []
+        
+        tokenized = [self._tokenize(d) for d in docs]
+        query_terms = self._tokenize(query)
+        if not query_terms:
+            return []
+        
+        k1, b = 1.5, 0.75
+        doc_lengths = [len(t) for t in tokenized]
+        avgdl = sum(doc_lengths) / len(doc_lengths) if doc_lengths else 1.0
+        
+        df = {}
+        for tokens in tokenized:
+            for term in set(tokens):
+                df[term] = df.get(term, 0) + 1
+        n_docs = len(tokenized)
+        idf = {
+            term: math.log(1 + (n_docs - freq + 0.5) / (freq + 0.5))
+            for term, freq in df.items()
+        }
+        
+        scored = []
+        for i, tokens in enumerate(tokenized):
+            tf = Counter(tokens)
+            score = 0.0
+            for term in query_terms:
+                if term not in tf:
+                    continue
+                t = tf[term]
+                denom = t + k1 * (1 - b + b * doc_lengths[i] / avgdl)
+                score += idf.get(term, 0.0) * (t * (k1 + 1)) / denom
+            if score > 0:
+                scored.append((i, score))
+        
+        scored.sort(key=lambda x: x[1], reverse=True)
+        
+        results = []
+        for i, score in scored[:limit]:
+            meta = metas[i] if i < len(metas) else {}
+            results.append({
+                "id": ids[i],
+                "document_id": meta.get("document_id", ""),
+                "document_name": meta.get("document_name", ""),
+                "chunk_text": docs[i],
+                # Raw BM25 score; only its rank matters in RRF fusion.
+                "relevance_score": score,
+                "metadata": meta,
+            })
+        return results
+    
+    def _rrf_fuse(
+        self,
+        ranked_lists: List[List[Dict]],
+        top_k: int,
+        k: int = 60
+    ) -> List[Dict]:
+        """
+        Reciprocal Rank Fusion: combine multiple ranked lists without caring
+        about their score scales (cosine 0..1 vs BM25). score = 1 / (k + rank).
+        """
+        scores = {}
+        entries = {}
+        for results in ranked_lists:
+            for rank, r in enumerate(results, start=1):
+                key = r["id"]
+                scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank)
+                entries.setdefault(key, r)
+        fused = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+        return [entries[key] for key, _ in fused]
+    
+    def search_hybrid(
+        self,
+        query: str,
+        user_id: int,
+        top_k: int = 5,
+        document_ids: Optional[List[str]] = None
+    ) -> List[Dict]:
+        """
+        Hybrid retrieval: vector similarity + BM25 keyword search, fused with
+        RRF. Returns the same result shape as search().
+        """
+        self.initialize()
+        self.load_embedding_model()
+        
+        logger.info(f"Hybrid search for: '{query}' (user: {user_id}, top_k: {top_k})")
+        
+        vector_results = self.search(
+            query=query,
+            user_id=user_id,
+            top_k=top_k * 2,
+            document_ids=document_ids
+        )
+        keyword_results = self._bm25_search(
+            query=query,
+            user_id=user_id,
+            document_ids=document_ids,
+            limit=top_k * 2
+        )
+        
+        fused = self._rrf_fuse(
+            [vector_results, keyword_results],
+            top_k=top_k,
+            k=settings.hybrid_rrf_k
+        )
+        logger.info(f"Hybrid search: {len(vector_results)} vector + "
+                    f"{len(keyword_results)} keyword -> {len(fused)} fused")
+        return fused
     
     def delete_document(self, document_id: str, user_id: int) -> int:
         """

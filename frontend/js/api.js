@@ -54,6 +54,151 @@ class APIClient {
         return headers;
     }
 
+    /**
+     * Pydantic messages are precise but robotic. Translate the common ones so
+     * people see "must be at least 8 characters" instead of
+     * "String should have at least 8 characters".
+     */
+    static humanizeValidationMessage(msg) {
+        if (!msg) return msg;
+        return msg
+            .replace(/^String should have at least (\d+) characters?$/i,
+                'must be at least $1 characters')
+            .replace(/^String should have at most (\d+) characters?$/i,
+                'must be at most $1 characters')
+            .replace(/^String should match pattern.*$/i,
+                'contains characters that are not allowed here')
+            .replace(/value is not a valid email address/i,
+                'is not a valid email address')
+            .replace(/^Field required$/i, 'is required')
+            .replace(/^Input should be a valid (.*)$/i, 'must be a valid $1');
+    }
+
+    /**
+     * Turn an error payload into a readable sentence.
+     *
+     * FastAPI sends validation failures as a LIST of objects, which used to be
+     * stringified straight into the UI as "[object Object]".
+     */
+    static formatError(data, status) {
+        const detail = data && data.detail;
+
+        if (typeof detail === 'string' && detail.trim()) {
+            return detail;
+        }
+
+        if (Array.isArray(detail)) {
+            const messages = detail.map((item) => {
+                if (typeof item === 'string') return item;
+                if (item && typeof item === 'object') {
+                    const field = Array.isArray(item.loc)
+                        ? item.loc.filter((part) => part !== 'body' && part !== 'query').join('.')
+                        : '';
+                    let msg = item.msg || item.message || 'Invalid value';
+                    msg = msg.replace(/^Value error,\s*/i, '');
+                    msg = APIClient.humanizeValidationMessage(msg);
+                    return field ? `${field}: ${msg}` : msg;
+                }
+                return String(item);
+            }).filter(Boolean);
+
+            if (messages.length) return messages.join('\n');
+        }
+
+        if (detail && typeof detail === 'object') {
+            return detail.message || JSON.stringify(detail);
+        }
+
+        return `Request failed (HTTP ${status}).`;
+    }
+
+    /**
+     * Turn any thrown error into { title, message, hint } for the UI.
+     *
+     * One place decides how the app talks about failure, so every surface
+     * (toast, form, chat bubble) stays consistent.
+     */
+    static friendlyError(error) {
+        const status = (error && error.status) || 0;
+        const raw = (error && error.message) || '';
+        const lower = raw.toLowerCase();
+
+        if (error && error.isNetwork) {
+            return {
+                title: "Can't reach the server",
+                message: 'The backend is not responding.',
+                hint: "If you're running it locally, start the server and try again. Nothing you typed was lost."
+            };
+        }
+
+        // Common, specific cases first
+        if (lower.includes('already registered') || lower.includes('already exists')) {
+            return {
+                title: 'That account already exists',
+                message: raw,
+                hint: 'Try logging in instead, or use a different username or email.'
+            };
+        }
+
+        if (lower.includes('limit reached') || lower.includes('more document')) {
+            return {
+                title: 'Document limit reached',
+                message: raw,
+                hint: 'Delete a document from the sidebar, then upload again.'
+            };
+        }
+
+        if (status === 401) {
+            return {
+                title: 'Sign-in required',
+                message: raw || 'Your session has expired. Please log in again.',
+                hint: raw.toLowerCase().includes('incorrect') ? 'Check the spelling and try again.' : null
+            };
+        }
+
+        if (status === 403) {
+            return { title: 'Not allowed', message: raw || "You don't have permission to do that.", hint: null };
+        }
+
+        if (status === 404) {
+            return { title: 'Not found', message: raw || 'That item no longer exists.', hint: 'Refresh the page and try again.' };
+        }
+
+        if (status === 413) {
+            return { title: 'File too large', message: raw || 'That file is over the size limit.', hint: 'Try a smaller file.' };
+        }
+
+        if (status === 422) {
+            return {
+                title: 'Please check your input',
+                message: raw || 'Some values were rejected.',
+                hint: null
+            };
+        }
+
+        if (status === 429) {
+            return { title: 'Too many requests', message: 'Slow down for a moment.', hint: 'Wait a few seconds, then try again.' };
+        }
+
+        if (status >= 500) {
+            return {
+                title: 'Server problem',
+                message: raw || 'The server hit an unexpected error.',
+                hint: 'This is usually temporary - try again in a moment.'
+            };
+        }
+
+        if (status === 400) {
+            return { title: 'Request rejected', message: raw || 'The server could not accept that request.', hint: null };
+        }
+
+        return {
+            title: 'Something went wrong',
+            message: raw || 'An unexpected error occurred.',
+            hint: status ? `HTTP ${status}` : null
+        };
+    }
+
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
         const config = {
@@ -64,32 +209,55 @@ class APIClient {
             }
         };
 
+        let response;
         try {
-            console.log('Making request to:', url);
-            const response = await fetch(url, config);
-            
-            // Check content type before parsing
-            const contentType = response.headers.get('content-type');
-            console.log('Response content-type:', contentType, 'status:', response.status);
-            
-            // If not JSON, log the text response for debugging
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Expected JSON but got:', contentType, '\nResponse:', text.substring(0, 500));
-                throw new Error(`Server returned ${contentType} instead of JSON. Status: ${response.status}`);
+            response = await fetch(url, config);
+        } catch (networkError) {
+            // Server down, DNS failure, offline, CORS...
+            console.error('Network error for', url, networkError);
+            const err = new Error("Can't reach the server.");
+            err.status = 0;
+            err.isNetwork = true;
+            throw err;
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        let data = null;
+
+        if (contentType.includes('application/json')) {
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Invalid JSON from', url, parseError);
+                data = null;
+            }
+        } else {
+            // e.g. an HTML error page served by a proxy
+            const text = await response.text();
+            console.error('Expected JSON but got', contentType, 'status', response.status, text.slice(0, 300));
+        }
+
+        if (!response.ok) {
+            const error = new Error(APIClient.formatError(data, response.status));
+            error.status = response.status;
+            error.payload = data;
+
+            // An AUTHENTICATED request was rejected: the token expired or was revoked.
+            if (response.status === 401 && options.auth !== false) {
+                this.clearToken();
+                window.dispatchEvent(new CustomEvent('auth:expired'));
             }
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.detail || `HTTP error! status: ${response.status}`);
-            }
-
-            return data;
-        } catch (error) {
-            console.error('API Error:', error);
             throw error;
         }
+
+        if (data === null) {
+            const error = new Error('The server returned an unexpected response.');
+            error.status = response.status;
+            throw error;
+        }
+
+        return data;
     }
 
     // Auth endpoints
@@ -106,7 +274,7 @@ class APIClient {
             return data;
         } catch (error) {
             console.error('Register API error:', error);
-            throw new Error(error.message || 'Registration failed');
+            throw error; // keep status/payload so the UI can explain it
         }
     }
 
@@ -123,7 +291,7 @@ class APIClient {
             return data;
         } catch (error) {
             console.error('Login API error:', error);
-            throw new Error(error.message || 'Login failed');
+            throw error; // keep status/payload so the UI can explain it
         }
     }
 
@@ -150,13 +318,23 @@ class APIClient {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     resolve(JSON.parse(xhr.responseText));
                 } else {
-                    const errorData = JSON.parse(xhr.responseText);
-                    reject(new Error(errorData.detail || `Upload failed: ${xhr.statusText}`));
+                    let errorData = null;
+                    try { errorData = JSON.parse(xhr.responseText); } catch (_) { /* ignore */ }
+                    const err = new Error(APIClient.formatError(errorData, xhr.status));
+                    err.status = xhr.status;
+                    if (xhr.status === 401) {
+                        this.clearToken();
+                        window.dispatchEvent(new CustomEvent('auth:expired'));
+                    }
+                    reject(err);
                 }
             });
 
             xhr.addEventListener('error', () => {
-                reject(new Error('Upload failed'));
+                const err = new Error("Upload couldn't reach the server.");
+                err.status = 0;
+                err.isNetwork = true;
+                reject(err);
             });
 
             xhr.open('POST', `${this.baseURL}/upload`);
@@ -187,13 +365,23 @@ class APIClient {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     resolve(JSON.parse(xhr.responseText));
                 } else {
-                    const errorData = JSON.parse(xhr.responseText);
-                    reject(new Error(errorData.detail || `Upload failed: ${xhr.statusText}`));
+                    let errorData = null;
+                    try { errorData = JSON.parse(xhr.responseText); } catch (_) { /* ignore */ }
+                    const err = new Error(APIClient.formatError(errorData, xhr.status));
+                    err.status = xhr.status;
+                    if (xhr.status === 401) {
+                        this.clearToken();
+                        window.dispatchEvent(new CustomEvent('auth:expired'));
+                    }
+                    reject(err);
                 }
             });
 
             xhr.addEventListener('error', () => {
-                reject(new Error('Upload failed - Network error'));
+                const err = new Error("Upload couldn't reach the server.");
+                err.status = 0;
+                err.isNetwork = true;
+                reject(err);
             });
 
             xhr.open('POST', `${this.baseURL}/upload`);

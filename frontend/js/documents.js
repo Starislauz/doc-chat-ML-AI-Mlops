@@ -59,8 +59,7 @@ function openUploadModal() {
 
 async function checkDocumentLimit() {
     try {
-        const response = await api.get('/cleanup/limit-status');
-        const limitStatus = response.data;
+        const limitStatus = await api.request('/cleanup/limit-status');
         
         if (!limitStatus.can_upload) {
             showToast(
@@ -163,7 +162,7 @@ function updateFilePreview() {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-preview-item';
         fileItem.innerHTML = `
-            <div class="file-icon">${isImage ? '🖼️' : '📄'}</div>
+            <div class="file-icon"><i class="fas ${isImage ? 'fa-image' : 'fa-file'}"></i></div>
             <div class="file-details">
                 <div class="file-name">${file.name}</div>
                 <div class="file-size">${formatFileSize(file.size)}</div>
@@ -223,13 +222,13 @@ async function startUpload() {
             if (successCount === 1 && firstDoc.summary) {
                 const summaryPreview = firstDoc.summary.substring(0, 100);
                 showToast(
-                    'Upload successful! 🎉', 
+                    'Upload successful', 
                     `${message}\n\nDocument analyzed: ${summaryPreview}...`,
                     'success',
                     5000
                 );
             } else {
-                showToast('Upload successful! 🎉', message, 'success');
+                showToast('Upload successful', message, 'success');
             }
         }
         
@@ -261,7 +260,7 @@ async function startUpload() {
         }
         
     } catch (error) {
-        showToast('Upload failed', error.message, 'error');
+        showErrorToast(error, 'Upload failed');
         document.getElementById('uploadArea').style.display = 'block';
         document.getElementById('uploadProgress').style.display = 'none';
         document.getElementById('filePreview').style.display = 'block';
@@ -296,7 +295,7 @@ async function loadDocuments() {
     try {
         documents = await api.listDocuments();
         window.documents = documents; // Update global reference
-        console.log('📚 Loaded documents:', documents.length, documents);
+        console.log('Loaded documents:', documents.length, documents);
         renderDocuments(documents);
         
         // Update chat UI based on document availability
@@ -321,7 +320,7 @@ function updateChatUIForDocuments() {
             messageInput.placeholder = 'Ask questions about your documents...';
         }
         if (chatTitle) {
-            chatTitle.textContent = '💬 AI Assistant';
+            chatTitle.textContent = 'AI Assistant';
         }
         if (chatSubtitle) {
             chatSubtitle.textContent = `${window.documents.length} document${window.documents.length > 1 ? 's' : ''} available - Ask me anything!`;
@@ -330,13 +329,13 @@ function updateChatUIForDocuments() {
         // Disable chat - require document upload
         if (messageInput) {
             messageInput.disabled = false; // Keep enabled so they can type
-            messageInput.placeholder = '📤 Please upload documents first to start chatting...';
+            messageInput.placeholder = 'Please upload documents first to start chatting...';
         }
         if (chatTitle) {
-            chatTitle.textContent = '💬 AI Assistant';
+            chatTitle.textContent = 'AI Assistant';
         }
         if (chatSubtitle) {
-            chatSubtitle.textContent = '⚠️ Upload documents to start chatting';
+            chatSubtitle.textContent = 'Upload documents to start chatting';
         }
     }
 }
@@ -362,7 +361,7 @@ function renderDocuments(docs) {
     docs.forEach(doc => {
         const fileExt = doc.filename ? '.' + doc.filename.split('.').pop().toLowerCase() : '';
         const isImage = ['.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif'].includes(fileExt);
-        const icon = isImage ? '🖼️' : '📄';
+        const icon = isImage ? '<i class="fas fa-image"></i>' : '<i class="fas fa-file"></i>';
         
         const docItem = document.createElement('div');
         docItem.className = 'document-item';
@@ -373,16 +372,7 @@ function renderDocuments(docs) {
             // Extract first line or truncate summary for preview
             const summaryPreview = doc.summary.split('\n')[0].substring(0, 150);
             summaryHTML = `
-                <div class="doc-summary-preview" style="
-                    font-size: 12px; 
-                    color: #666; 
-                    margin-top: 5px; 
-                    padding-top: 5px; 
-                    border-top: 1px solid #eee;
-                    max-height: 40px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                ">
+                <div class="doc-summary-preview">
                     ${summaryPreview}${doc.summary.length > 150 ? '...' : ''}
                 </div>
             `;
@@ -453,28 +443,15 @@ async function viewDocumentSummary(documentId, event) {
         
         // Show in modal
         showSummaryModal(
-            `📄 ${doc.filename}`,
+            doc.filename,
             `
-                <div class="document-stats" style="
-                    background: #f5f5f5; 
-                    padding: 15px; 
-                    border-radius: 8px; 
-                    margin-bottom: 20px;
-                    display: flex;
-                    gap: 20px;
-                    flex-wrap: wrap;
-                ">
+                <div class="document-stats">
                     <div><strong>Chunks:</strong> ${doc.chunk_count}</div>
                     <div><strong>Size:</strong> ${formatFileSize(doc.file_size || 0)}</div>
                     <div><strong>Type:</strong> ${doc.file_type || 'Unknown'}</div>
                     <div><strong>Uploaded:</strong> ${formatDate(doc.uploaded_at)}</div>
                 </div>
-                <div class="document-summary-content" style="
-                    line-height: 1.6; 
-                    max-height: 400px; 
-                    overflow-y: auto;
-                    padding-right: 10px;
-                ">
+                <div class="document-summary-content">
                     ${summaryHTML}
                 </div>
             `
@@ -554,7 +531,7 @@ function selectDocument(doc) {
     event.currentTarget.classList.add('active');
     
     // Update chat header
-    document.getElementById('chatTitle').textContent = `📄 ${doc.filename}`;
+    document.getElementById('chatTitle').textContent = doc.filename;
     document.getElementById('chatSubtitle').textContent = `${doc.chunk_count} chunks • Ask questions about this document`;
     
     showToast('Document selected', `Now chatting about ${doc.filename}`, 'success');
@@ -587,13 +564,13 @@ async function deleteDocument(documentId, filename, event) {
         // Clear chat if this was the selected document
         const chatTitle = document.getElementById('chatTitle');
         if (chatTitle && chatTitle.textContent.includes(filename)) {
-            chatTitle.textContent = '💬 Chat';
+            chatTitle.textContent = 'AI Assistant';
             document.getElementById('chatSubtitle').textContent = 'Upload documents and start asking questions';
         }
         
     } catch (error) {
         console.error('Failed to delete document:', error);
-        showToast('Delete failed', error.message || 'Could not delete document', 'error');
+        showErrorToast(error, 'Delete failed');
     }
 }
 

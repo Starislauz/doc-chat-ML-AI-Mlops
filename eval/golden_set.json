@@ -1,0 +1,282 @@
+{
+  "description": "Golden evaluation set for Doc-chat RAG. 22 answerable + 8 unanswerable questions.",
+  "version": 1,
+  "test_docs": [
+    "nebula_pro_handbook.md",
+    "meridian_research_notes.md",
+    "lumen_support_policy.txt"
+  ],
+  "abstain_sentence": "I couldn't find that in your documents.",
+  "questions": [
+    {
+      "id": 1,
+      "question": "What are the physical dimensions of the Nebula Pro thermostat?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "84 mm wide, 84 mm tall and 22 mm deep",
+      "evidence": "84 mm wide",
+      "keywords": ["84", "22"]
+    },
+    {
+      "id": 2,
+      "question": "How long does the Nebula Pro warranty last?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "3 years",
+      "evidence": "3-year limited warranty",
+      "keywords": ["3-year"]
+    },
+    {
+      "id": 3,
+      "question": "Which smart home standard does the Nebula Pro support?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "Matter 1.2",
+      "evidence": "Matter 1.2",
+      "keywords": ["matter", "1.2"]
+    },
+    {
+      "id": 4,
+      "question": "How do I reset the Nebula Pro to factory settings?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "Hold the rotary dial for 15 seconds until the LED flashes amber three times",
+      "evidence": "LED flashes amber three times",
+      "keywords": ["amber", "15"]
+    },
+    {
+      "id": 5,
+      "question": "What does it mean when the Nebula Pro LED blinks red five times?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "An internal sensor fault has been detected",
+      "evidence": "sensor fault",
+      "keywords": ["sensor", "fault"]
+    },
+    {
+      "id": 6,
+      "question": "How much does the Nebula Pro cost on its own?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "$249",
+      "evidence": "retails at $249",
+      "keywords": ["249"]
+    },
+    {
+      "id": 7,
+      "question": "Which app is required to control the Nebula Pro?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "The Nebula Home app",
+      "evidence": "Nebula Home app",
+      "keywords": ["nebula", "home"]
+    },
+    {
+      "id": 8,
+      "question": "What voltage does the Nebula Pro require?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "24 VAC with a C-wire",
+      "evidence": "24 VAC",
+      "keywords": ["vac"]
+    },
+    {
+      "id": 9,
+      "question": "How much can households save on heating bills with the Nebula Pro?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "Up to 14%",
+      "evidence": "up to 14%",
+      "keywords": ["14"]
+    },
+    {
+      "id": 10,
+      "question": "How many temperature schedules per day does the Nebula Pro support?",
+      "answerable": true,
+      "doc": "nebula_pro_handbook.md",
+      "expected_answer": "Up to eight",
+      "evidence": "eight temperature schedules",
+      "keywords": ["eight"]
+    },
+    {
+      "id": 11,
+      "question": "How long did the Project Meridian field study run?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "13 weeks, from June 2 to August 29, 2025",
+      "evidence": "13 weeks",
+      "keywords": ["13", "weeks"]
+    },
+    {
+      "id": 12,
+      "question": "How often did the SM-100 sensor record soil moisture?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "Every 15 minutes",
+      "evidence": "every 15 minutes",
+      "keywords": ["15", "minutes"]
+    },
+    {
+      "id": 13,
+      "question": "What was the average yield improvement in the sensor-managed plots?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "11.4%",
+      "evidence": "11.4%",
+      "keywords": ["11.4"]
+    },
+    {
+      "id": 14,
+      "question": "How much less water did the sensor-managed plots use?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "23% less",
+      "evidence": "23%",
+      "keywords": ["23"]
+    },
+    {
+      "id": 15,
+      "question": "How early could the sensors detect drought stress before visual symptoms?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "9 days before visual symptoms",
+      "evidence": "9 days",
+      "keywords": ["9", "days"]
+    },
+    {
+      "id": 16,
+      "question": "Which organisation funded Project Meridian?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "The GreenAcre Foundation with a $120,000 grant",
+      "evidence": "GreenAcre Foundation",
+      "keywords": ["greenacre"]
+    },
+    {
+      "id": 17,
+      "question": "Who was the lead researcher on Project Meridian?",
+      "answerable": true,
+      "doc": "meridian_research_notes.md",
+      "expected_answer": "Dr. Lena Okafor",
+      "evidence": "Lena Okafor",
+      "keywords": ["okafor"]
+    },
+    {
+      "id": 18,
+      "question": "When is the Lumen support desk open?",
+      "answerable": true,
+      "doc": "lumen_support_policy.txt",
+      "expected_answer": "Monday to Friday, 08:00 to 20:00 CET",
+      "evidence": "08:00",
+      "keywords": ["08:00", "cet"]
+    },
+    {
+      "id": 19,
+      "question": "What is Lumen's refund window?",
+      "answerable": true,
+      "doc": "lumen_support_policy.txt",
+      "expected_answer": "Full refund within 30 days of purchase",
+      "evidence": "full refund within 30 days",
+      "keywords": ["30", "days"]
+    },
+    {
+      "id": 20,
+      "question": "How quickly does Lumen respond to critical incidents?",
+      "answerable": true,
+      "doc": "lumen_support_policy.txt",
+      "expected_answer": "Within 2 hours",
+      "evidence": "within 2 hours",
+      "keywords": ["2", "hours"]
+    },
+    {
+      "id": 21,
+      "question": "What is the Lumen support email address?",
+      "answerable": true,
+      "doc": "lumen_support_policy.txt",
+      "expected_answer": "support@lumen.example.com",
+      "evidence": "support@lumen.example.com",
+      "keywords": ["lumen.example.com"]
+    },
+    {
+      "id": 22,
+      "question": "What monthly uptime does Lumen guarantee?",
+      "answerable": true,
+      "doc": "lumen_support_policy.txt",
+      "expected_answer": "99.5%",
+      "evidence": "99.5%",
+      "keywords": ["99.5"]
+    },
+    {
+      "id": 23,
+      "question": "What is the capital of Bhutan?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 24,
+      "question": "Does the Nebula Pro work with Apple HomeKit?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 25,
+      "question": "What is the warranty period for an Apple iPhone 15?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 26,
+      "question": "What were OpenAI's Q4 2025 earnings?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 27,
+      "question": "Who wrote the novel Moby-Dick?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 28,
+      "question": "What is the airspeed velocity of an unladen swallow?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 29,
+      "question": "Does the Nebula Pro support 5G cellular connectivity?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    },
+    {
+      "id": 30,
+      "question": "What discount code do I need for the Lumen loyalty program?",
+      "answerable": false,
+      "doc": null,
+      "expected_answer": "I couldn't find that in your documents.",
+      "evidence": null,
+      "keywords": []
+    }
+  ]
+}

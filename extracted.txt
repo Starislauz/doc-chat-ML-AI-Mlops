@@ -1,0 +1,243 @@
+--- Page 1 ---
+25/09/2026, 14:39 Download Transcript
+University of the People
+Unofficial Academic Record Key
+Issued Date
+Student name: Anthony Chukwuemeka Njoku
+Address: Abuja, Nigeria,
+Program: Bachelor of Science in Computer Science
+Student ID: S466047
+Birth date: October 24, 2002
+Enrollment date: September 5, 2024
+Degree Awarded: Bachelor of Science
+Date Conferred:
+Courses taken as a non-degree seeking student
+November 2023
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Online Education
+UNIV 1001 B 3 9
+Strategies
+Term 9 3 3 3 3.00
+Cumulative 9 3 3 3 3.00
+February 2024
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Programming
+CS 1101 R F 3 0
+Fundamentals
+Term 0 3 0 3 0.00
+Cumulative 9 6 3 6 1.50
+April 2024
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Programming
+CS 1101 R B 3 9
+Fundamentals
+POLS 1503 Globalization B+ 3 9.99
+Term 18.99 6 6 6 3.17
+Cumulative 27.99 12 9 9 3.11
+about:blank 1/7
+--- Page 2 ---
+25/09/2026, 14:39 Download Transcript
+June 2024
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+ENGL 1102 English Composition 2 C+ 3 6.99
+CS 1102 Programming 1 B+ 3 9.99
+Term 16.98 6 6 6 2.83
+Cumulative 44.97 18 15 15 3.00
+Transfer credit Recognized
+University Term Course Title Credits
+Introduction to
+Sophia Learning SOPH 0047 Relational 3
+Databases
+Introduction to
+Sophia Learning SOPH 0063 3
+Nutrition
+Sophia Learning SOPH 0029 Art History II 3
+Environmental
+Sophia Learning SOPH-0016 3
+Science
+Principles of
+Sophia Learning SOPH 0033 3
+Finance
+Project
+Sophia Learning SOPH-0013 3
+Management
+Visual
+Sophia Learning SOPH-0009 3
+Communications
+Introduction to
+Sophia Learning SOPH-0020 3
+Ethics
+Sophia Learning SOPH 0002 Human Biology 3
+Sophia Learning SOPH 0007 Conflict Resolution 3
+Introduction to
+Sophia Learning SOPH 0023 Information 3
+Technology
+Introduction to
+Sophia Learning SOPH 0014 3
+Business
+Sophia Learning SOPH-0012 Macroeconomics 3
+Introduction to
+Sophia Learning SOPH-0055 College 3
+Mathematics
+Bachelor of Science in Computer Science
+September 2024
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Digital Electronics &
+CS 1105 B+ 3 9.99
+Computer Architecture
+CS 1103 Programming 2 A- 3 11.01
+MATH 1280 Introduction to Statistics B+ 3 9.99
+about:blank 2/7
+--- Page 3 ---
+25/09/2026, 14:39 Download Transcript
+Applied Economics:
+ECON 1580 B 3 9
+Theory and Practice
+Term 39.99 12 12 12 3.33
+Cumulative 84.96 30 27 27 3.15
+November 2024
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+CS 2301 Operating Systems 1 A- 3 11.01
+Greek and Roman
+HIST 1421 A- 3 11.01
+Civilization
+Communications and
+CS 2204 A- 3 11.01
+Networking
+CS 2205 Web Programming 1 A- 3 11.01
+Term 44.04 12 12 12 3.67
+Cumulative 129 42 39 39 3.31
+January 2025
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Introduction to
+PHIL 1402 B 3 9
+Philosophy
+CS 2401 Software Engineering 1 B 3 9
+CS 3303 Data Structures B 3 9
+CS 3305 Web Programming 2 B 3 9
+Term 36 12 12 12 3.00
+Cumulative 165 54 51 51 3.24
+April 2025
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Professional
+COM 2001 B 3 9
+Communication
+MATH 1211 Calculus B 3 9
+CS 3306 Databases 2 A 3 12
+Introduction to Computer
+CS 1111 A 3 12
+Science
+Term 42 12 12 12 3.50
+Cumulative 207 66 63 63 3.29
+June 2025
+about:blank 3/7
+--- Page 4 ---
+25/09/2026, 14:39 Download Transcript
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Comparative
+CS 4402 A- 3 11.01
+Programming Languages
+MATH 1302 Discrete Mathematics B 3 9
+CS 3307 Operating Systems 2 B 3 9
+Systems & Application
+CS 3340 B 3 9
+Security
+Term 38.01 12 12 12 3.17
+Cumulative 245.01 78 75 75 3.27
+September 2025
+Repeated Grade Credits G-Pts A-Crds E-Crds GP-Crds GPA
+Course Title
+Data Mining and
+CS 4407 B+ 3 9.99
+Machine Learning
+Term 9.99 3 3 3 3.33
+Cumulative 255 81 78 78 3.27
+----------------------------------------------------------------------No entries below this point---------------------------------
+-------------------------------------
+Course identification system : The prefix at the beginning of the course code represents the area of study, and
+the first digit of the course number represents the level of the course. Levels are indicated as follows:
+0 Courses below the 1000 level are preparatory in nature and may not be credited toward a University of the
+People degree
+1&2 Undergraduate course, lower-division
+3&4 Undergraduate course, upper-division
+5 Graduate courses, graduate division
+Title: Full course name
+Grade : Final letter grade
+Credits : Number of credits assigned to the course
+G-Pts (Grade Points): Grade Points earned at each course are determined by multiplying course credits by the
+appropriate point value. Grade Points are only calculated for credit courses.
+For example a C equals a 2.00 point value. To calculate G-Pts, multiply the 2.00 point value by the number of
+course credits.
+A-Crds (Attempted Credits) : Attempted Credits include the total number of course credits taken excluding
+dropped courses.
+E-Crds (Earned Credits): Earned Credits include the total number of course credits successfully completed.
+GP-Crds (Grade Point Credit) : Grade Point Credits represent the number of credits that are calculated into the
+GPA. This includes all for credit courses except Pass/Fail courses.
+GPA (Grade Point Average) : Grade Point Average is calculated by dividing the G-Pts by the GP-Crds (G-Pts / GP-
+Crds).
+Academic Calendar and Enrollment Terms:
+about:blank 4/7
+--- Page 5 ---
+25/09/2026, 14:39 Download Transcript
+The academic year consists of five terms. Each ten weeks in length. All courses taken at the University are listed
+under the term in which they were taken.
+Grading system
+The university offers a four-point grading system as follows:
+Undergraduate
+Letter Grade Grade Scale Point Value
+A+ Excellent 98-100 4.00*
+A Excellent 93-97 4.00
+A- Excellent 90-92 3.67
+B+ Above Average 88-89 3.33
+B Above Average 83-87 3.00
+B- Above Average 80-82 2.67
+C+ Average 78-79 2.33
+C Average 73-77 2.00
+C- Average 70-72 1.67
+D+ Poor 68-69 1.33
+D Poor 63-67 1.00
+D- Poor 60-62 0.67
+F Fail Under 60** 0.00
+about:blank 5/7
+--- Page 6 ---
+25/09/2026, 14:39 Download Transcript
+Graduate
+Letter Grade Grade Scale Point Value
+A+ Excellent 98-100 4.00*
+A Excellent 93-97 4.00
+A- Excellent 90-92 3.67
+B+ Average 88-89 3.33
+B Average 83-87 3.00
+B- Average 80-82 2.67
+C+ Low Pass 78-79 2.33
+C Low Pass 73-77 2.00
+C- Fail 70-72 1.67
+D+ Fail 68-69 1.33
+D Fail 63-67 1.00
+D- Fail 60-62 0.67
+F Fail Under 60** 0.00
+*Grade points assigned to an A+ letter grade were changed from 4.33 to 4.00 in September 2012.
+**Under 73 (C) in English Composition 1 (ENGL 0101) and Developmental Algebra (MATH 0101)
+Grades not calculated in GPA:
+about:blank 6/7
+--- Page 7 ---
+25/09/2026, 14:39 Download Transcript
+P (Passing) Indicates completion of the course duties with academic work equivalent to a D- or above.
+W (Withdrawal) Withdrawal indicates that the student withdrew from the course or was removed from the
+course by the University due to inactivity.
+Achievements (credits and grades) earned as Non Degree Seeking Students will be counted towards an
+Undergraduate Program C/GPA.
+It is the policy of the university not to grant any other party access to this information without the written
+consent of the student/graduate.
+If you have additional questions about this document, please contact your program advisor.
+;
+about:blank 7/7

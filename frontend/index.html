@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#0b0d13">
     <meta name="author" content="Anthony Njoku">
     <meta name="description" content="AI/ML Engineer & MLops Specialist - Intelligent Document Processing System">
     <title>RAG Document Chat - AI-Powered Document Assistant</title>
-    <link rel="stylesheet" href="/static/css/styles.css?v=2.0">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="stylesheet" href="/static/css/theme.css?v=4.3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -17,7 +18,7 @@
     <div id="authModal" class="modal active">
         <div class="modal-content glass">
             <div class="auth-header">
-                <h1 class="gradient-text" id="authAppTitle">🤖 RAG Document Chat</h1>
+                <h1 class="gradient-text" id="authAppTitle">RAG Document Chat</h1>
                 <p id="authAppSubtitle">Your AI-Powered Document Assistant</p>
                 <div class="auth-branding">
                     <small>Created by <strong id="authAppAuthor">Anthony Njoku</strong></small>
@@ -69,8 +70,8 @@
 
     <!-- Main App -->
     <div id="mainApp" class="app-container">
-        <!-- Mobile Menu Button -->
-        <button id="mobileMenuBtn" class="mobile-menu-btn" style="display: none;">
+        <!-- Mobile Menu Button (visibility is controlled by CSS media queries) -->
+        <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open documents" title="Documents">
             <i class="fas fa-bars"></i>
         </button>
         
@@ -80,10 +81,16 @@
         <!-- Sidebar -->
         <aside class="sidebar glass" id="sidebar">
             <div class="sidebar-header">
-                <h2 class="gradient-text">📚 Documents</h2>
-                <button id="uploadBtn" class="btn btn-small" title="Upload Document">
-                    <i class="fas fa-plus"></i>
-                </button>
+                <h2 class="gradient-text">Documents</h2>
+                <div class="sidebar-header-actions">
+                    <button id="uploadBtn" class="btn btn-small" title="Upload Document">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button id="closeSidebarBtn" class="btn btn-small btn-icon sidebar-close-btn"
+                            title="Close" aria-label="Close document list">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="search-box">
@@ -133,15 +140,15 @@
             <!-- Chat Header -->
             <header class="chat-header glass">
                 <div class="chat-info">
-                    <h2 id="chatTitle">💬 AI Assistant</h2>
+                    <h2 id="chatTitle">AI Assistant</h2>
                     <p id="chatSubtitle">Ask questions about your documents</p>
                 </div>
                 <div class="header-actions">
-                    <button id="aboutBtn" class="btn btn-small" title="About">
-                        <i class="fas fa-info-circle"></i> About
+                    <button id="aboutBtn" class="btn btn-small" title="About" aria-label="About">
+                        <i class="fas fa-info-circle"></i> <span class="btn-label">About</span>
                     </button>
-                    <button id="newChatBtn" class="btn btn-small" title="New Chat">
-                        <i class="fas fa-plus"></i> New Chat
+                    <button id="newChatBtn" class="btn btn-small" title="New Chat" aria-label="New chat">
+                        <i class="fas fa-plus"></i> <span class="btn-label">New Chat</span>
                     </button>
                     <button id="themeToggle" class="btn btn-small btn-icon" title="Toggle Theme">
                         <i class="fas fa-moon"></i>
@@ -155,7 +162,7 @@
             <!-- Chat Messages -->
             <div id="chatMessages" class="chat-messages">
                 <div class="welcome-message">
-                    <div class="welcome-icon">🤖</div>
+                    <div class="welcome-icon"><i class="fas fa-robot"></i></div>
                     <h2 id="welcomeTitle">Welcome to RAG Document Chat!</h2>
                     <p id="welcomeSubtitle">Upload documents and ask questions about them. I'll help you find answers using AI.</p>
                     <div class="welcome-branding">
@@ -260,7 +267,7 @@
                 </div>
                 
                 <div class="about-section">
-                    <h4>👨‍💻 Created By</h4>
+                    <h4>Created By</h4>
                     <div class="author-card">
                         <div class="author-avatar">
                             <i class="fas fa-user-circle"></i>
@@ -287,7 +294,7 @@
                 </div>
                 
                 <div class="about-section">
-                    <h4>🎯 Expertise Areas</h4>
+                    <h4>Expertise Areas</h4>
                     <ul class="feature-list">
                         <li><i class="fas fa-check-circle"></i> <strong>AI/ML Engineering:</strong> Building intelligent systems with deep learning and NLP</li>
                         <li><i class="fas fa-check-circle"></i> <strong>MLops:</strong> Production-ready ML pipelines and model deployment</li>
@@ -298,7 +305,7 @@
                 </div>
                 
                 <div class="about-section">
-                    <h4>✨ System Features</h4>
+                    <h4>System Features</h4>
                     <ul class="feature-list">
                         <li><i class="fas fa-file-pdf"></i> Multi-format document support (PDF, DOCX, TXT)</li>
                         <li><i class="fas fa-image"></i> Scanned PDF processing with AI OCR</li>
@@ -310,7 +317,7 @@
                 </div>
                 
                 <div class="about-section">
-                    <h4>🔧 Technology Stack</h4>
+                    <h4>Technology Stack</h4>
                     <div class="tech-badges">
                         <span class="badge">Python</span>
                         <span class="badge">FastAPI</span>
@@ -327,10 +334,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/api.js?v=2.0"></script>
-    <script src="/static/js/auth.js?v=2.0"></script>
-    <script src="/static/js/chat.js?v=2.0"></script>
-    <script src="/static/js/documents.js?v=2.0"></script>
-    <script src="/static/js/app.js?v=2.0"></script>
+    <script src="/static/js/api.js?v=4.3"></script>
+    <script src="/static/js/auth.js?v=4.3"></script>
+    <script src="/static/js/chat.js?v=4.3"></script>
+    <script src="/static/js/documents.js?v=4.3"></script>
+    <script src="/static/js/app.js?v=4.3"></script>
 </body>
 </html>

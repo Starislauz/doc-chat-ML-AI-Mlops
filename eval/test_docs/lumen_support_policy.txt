@@ -1,0 +1,55 @@
+LUMEN SUPPORT POLICY
+Effective date: 1 January 2026
+Version 4.1
+
+1. SUPPORT HOURS
+Our support desk operates Monday to Friday from 08:00 to 20:00 Central
+European Time (CET). Outside these hours, coverage is limited to emergency
+incidents only. Weekend staffing is reserved for incidents classified as
+critical, defined as a complete outage of the workspace or data loss.
+
+2. RESPONSE TIMES
+Critical incidents receive a first response within 2 hours, around the
+clock. Standard incidents receive a first response within 1 business day.
+Low-priority questions receive a first response within 3 business days.
+These targets are measured from the moment a ticket is created in the
+support portal.
+
+3. CONTACT CHANNELS
+Support is available by email at support@lumen.example.com, through the
+in-app chat widget, and by phone at +31 20 555 0134. Live chat is staffed
+from 09:00 to 17:00 CET on weekdays. Email is monitored continuously during
+support hours.
+
+4. REFUNDS
+Customers are entitled to a full refund within 30 days of purchase, no
+questions asked. Refunds are processed to the original payment method
+within 5 business days of the request. After the first 30 days, unused
+credit on annual plans can be converted to account credit.
+
+5. SERVICE LEVEL AGREEMENT
+Lumen guarantees 99.5% monthly uptime, measured across all production
+regions. If uptime falls below this figure in a calendar month, affected
+customers receive account credit equal to 10% of their monthly fee for each
+full hour of downtime beyond the allowance.
+
+6. PRIORITY SUPPORT
+Priority support is available for $15 per month per workspace. Priority
+customers receive a guaranteed first response within 30 minutes for
+critical incidents and a dedicated support engineer familiar with their
+workspace configuration.
+
+7. DATA RETENTION
+After cancellation, workspace data is retained for 90 days, during which
+customers can export their content. After 90 days the data is permanently
+deleted from all production systems and backups.
+
+8. SECURITY
+All data is encrypted in transit using TLS 1.3 and at rest using AES-256.
+Access logs are kept for 12 months. Customers may enable two-factor
+authentication for all workspace members at no additional cost.
+
+9. SERVICE REGIONS
+Lumen production data is hosted in the European Union, with a secondary
+region in Canada for disaster recovery. Customers can request a data
+processing agreement from the support desk at any time.

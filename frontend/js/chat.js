@@ -6,6 +6,48 @@ let currentTypingTimeout = null;
 let speechSynthesis = window.speechSynthesis;
 let currentUtterance = null;
 let isSpeaking = false;
+let resizeRafId = null;
+let scrollRafId = null;
+let currentTypingTarget = null;
+let currentTypingText = null;
+
+function scheduleTextareaResize(textarea) {
+    if (resizeRafId) {
+        return;
+    }
+
+    resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null;
+        const previousHeight = textarea.style.height;
+        textarea.style.height = 'auto';
+        const nextHeight = `${textarea.scrollHeight}px`;
+        if (previousHeight !== nextHeight) {
+            textarea.style.height = nextHeight;
+        }
+    });
+}
+
+function scheduleScrollToBottom() {
+    if (scrollRafId) {
+        return;
+    }
+
+    scrollRafId = requestAnimationFrame(() => {
+        scrollRafId = null;
+        const messagesContainer = document.getElementById('chatMessages');
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    });
+}
+
+function finalizeTyping() {
+    if (currentTypingTarget && currentTypingText !== null) {
+        currentTypingTarget.innerHTML = formatMessageText(currentTypingText);
+        currentTypingTarget = null;
+        currentTypingText = null;
+    }
+}
 
 function initChat() {
     setupChatHandlers();
@@ -42,8 +84,10 @@ function setupChatHandlers() {
     
     // Auto-resize textarea
     messageInput.addEventListener('input', () => {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = messageInput.scrollHeight + 'px';
+        scheduleTextareaResize(messageInput);
+        if (isTyping) {
+            stopTyping();
+        }
     });
     
     // Handle keyboard visibility on mobile
@@ -109,8 +153,8 @@ async function sendMessage() {
     if (!hasDocuments) {
         // Show upload reminder in the chat
         showToast(
-            '📤 Upload Required',
-            'Please upload at least one document before chatting!',
+            'Upload Required',
+            'Please upload at least one document before chatting.',
             'warning',
             4000
         );
@@ -166,55 +210,43 @@ async function sendMessage() {
         console.error('❌ Chat error:', error);
         
         // Parse error details
-        let errorTitle = 'Something went wrong';
-        let errorDetails = error.message || 'Unknown error';
+        const info = APIClient.friendlyError(error);
+        let errorTitle = info.title;
+        let errorDetails = info.hint ? `${info.message} ${info.hint}` : info.message;
         
         // Check for specific error types
-        if (error.message && error.message.includes('422')) {
-            errorTitle = 'Request Error';
-            errorDetails = 'The server couldn\'t process your request. This usually means you need to upload documents first.';
-            
+        if (error.status === 422) {
+            errorTitle = 'Upload a document first';
+            errorDetails = 'The server could not process that request. This usually means you need to upload documents first.';
+
             // Show upload prompt
-            const errorMessage = `⚠️ **${errorTitle}**
+            const errorMessage = `**${errorTitle}**
 
 ${errorDetails}
 
-📤 **Next Steps:**
-1. Click the **"📤"** button at the top-left
-2. Upload at least one document (PDF, DOCX, TXT, or Image)
-3. Wait for processing to complete
-4. Try your question again!
-
-**Having issues?** Try refreshing the page (F5) or restarting the server.`;
+**Next steps:**
+- Upload at least one document (PDF, DOCX, TXT, or image)
+- Wait for processing to complete
+- Try your question again`;
             
             addMessageWithAnimation('assistant', errorMessage);
         } else {
             // Generic error message
-            const errorMessage = `⚠️ **Oops! ${errorTitle}**
+            const errorMessage = `**${errorTitle}**
 
-**Error details:** ${errorDetails}
+**Details:** ${errorDetails}
 
-🔧 **Quick Fixes:**
-- Make sure you're connected to the internet
-- Check if the server is running (START_SERVER.bat)
-- Try refreshing the page (F5)
-- Make sure you have documents uploaded
-
-💡 **Or try:**
-- Asking a different question
-- Re-uploading your documents
-- Rephrasing your question
-
-🤖 **Still having issues?**
-Check the browser console (F12) for more details, or restart the server.
-
-**I'm here to help once everything is working again!** 😊`;
+**Troubleshooting:**
+- Check your internet connection
+- Make sure the server is running
+- Refresh the page and try again
+- Make sure you have documents uploaded`;
             
             addMessageWithAnimation('assistant', errorMessage);
         }
         
         // Show toast notification
-        showToast('Error', errorTitle, 'error');
+        showErrorToast(error, 'Chat failed');
     }
 }
 
@@ -225,7 +257,7 @@ function addMessage(role, content, sources = null) {
     
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.textContent = role === 'user' ? '👤' : '🤖';
+    avatar.innerHTML = role === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
@@ -290,7 +322,7 @@ function addMessageWithAnimation(role, content, sources = null) {
     
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.textContent = role === 'user' ? '👤' : '🤖';
+    avatar.innerHTML = role === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
@@ -305,6 +337,8 @@ function addMessageWithAnimation(role, content, sources = null) {
     
     // Show stop button during typing
     isTyping = true;
+    currentTypingTarget = messageText;
+    currentTypingText = content;
     showStopButton();
     
     // Animate text appearing
@@ -384,23 +418,23 @@ function addMessageWithAnimation(role, content, sources = null) {
 function typeWriter(element, text, index, callback) {
     if (!isTyping) {
         // User stopped typing
-        element.innerHTML = formatMessageText(text); // Show full text immediately
+        finalizeTyping();
         hideStopButton();
         if (callback) callback();
         return;
     }
     
     if (index < text.length) {
-        // Format text as we type (handle markdown-like formatting)
-        const currentText = text.substring(0, index + 1);
-        element.innerHTML = formatMessageText(currentText);
-        
-        // Scroll to bottom during typing
-        scrollToBottom();
+        const nextIndex = Math.min(text.length, index + 3);
+        const currentText = text.substring(0, nextIndex);
+        element.textContent = currentText;
+
+        // Scroll to bottom during typing (throttled)
+        scheduleScrollToBottom();
         
         // Vary speed for natural typing effect
-        const char = text[index];
-        let delay = 15; // Default fast typing
+        const char = text[nextIndex - 1];
+        let delay = 20; // Default fast typing
         
         if (char === '.' || char === '!' || char === '?') {
             delay = 300; // Pause at end of sentences
@@ -410,10 +444,11 @@ function typeWriter(element, text, index, callback) {
             delay = 100; // Pause at line breaks
         }
         
-        currentTypingTimeout = setTimeout(() => typeWriter(element, text, index + 1, callback), delay);
+        currentTypingTimeout = setTimeout(() => typeWriter(element, text, nextIndex, callback), delay);
     } else {
         isTyping = false;
         hideStopButton();
+        finalizeTyping();
         if (callback) callback();
     }
 }
@@ -425,6 +460,7 @@ function stopTyping() {
         clearTimeout(currentTypingTimeout);
         currentTypingTimeout = null;
     }
+    finalizeTyping();
     hideStopButton();
     stopSpeaking();
 }
@@ -532,21 +568,60 @@ function updateSpeakerButton(speaking) {
     });
 }
 
-// Format message text (convert markdown-like syntax to HTML)
+// Escape HTML so model output can never inject markup (XSS-safe)
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Format message text (convert limited markdown to HTML, heading-free)
 function formatMessageText(text) {
-    // Convert **bold** to <strong>
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Convert *italic* to <em>
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // Convert line breaks to <br>
-    text = text.replace(/\n/g, '<br>');
-    
-    // Convert - lists to bullet points
-    text = text.replace(/^- (.+)$/gm, '• $1');
-    
-    return text;
+    if (!text) return '';
+
+    // XSS-safe base: escape everything first, then re-add safe markup
+    let safe = escapeHtml(text);
+
+    // Cut everything from a trailing "Sources"/"References" heading onward.
+    // The UI renders its own citation block, so the model's pasted source
+    // section is hidden entirely.
+    const sourcesHeading = /^\s{0,3}(?:#{1,6}\s*\**\s*|\*{1,2}\s*)(sources?|references?)\s*\*{0,2}\s*:?\s*$/im;
+    const cutAt = safe.search(sourcesHeading);
+    if (cutAt !== -1) {
+        safe = safe.substring(0, cutAt).trim();
+    }
+
+    // Strip markdown headings (###, ##, #) - answers render professionally
+    safe = safe.replace(/^\s{0,3}#{1,6}\s*/gm, '');
+
+    // Drop lines containing only dangling emphasis markers (** or __)
+    safe = safe.replace(/^\s{0,3}(?:\*{1,3}|_{1,3})\s*$/gm, '');
+
+    // Strip inline [Source N] citation brackets - the UI shows real sources
+    // under each answer, so these are noise in the text
+    safe = safe.replace(/\s*\[[^\]\n]*\bSources?\b[^\]\n]*\]/g, '');
+    safe = safe.replace(/\s+([.,;:])/g, '$1');
+    safe = safe.replace(/ {2,}/g, ' ');
+
+    // Bold **text**
+    safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Italic *text*
+    safe = safe.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+
+    // Inline code `text`
+    safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+    // Bullet lines (- or *)
+    safe = safe.replace(/^[ \t]*[-*] (.*)$/gm, '• $1');
+
+    // Line breaks
+    safe = safe.replace(/\n/g, '<br>');
+
+    return safe;
 }
 
 function showTypingIndicator() {
@@ -557,7 +632,7 @@ function showTypingIndicator() {
     
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.textContent = '🤖';
+    avatar.innerHTML = '<i class="fas fa-robot"></i>';
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
@@ -611,71 +686,49 @@ function clearChatMessages() {
         // User has documents - show ready-to-chat message
         messagesContainer.innerHTML = `
             <div class="welcome-message">
-                <div class="welcome-icon">🎉</div>
-                <h2>Ready to Chat!</h2>
-                <p style="font-size: 1.1em; margin: 20px 0;">You have <strong>${window.documents.length} document${window.documents.length > 1 ? 's' : ''}</strong> uploaded and ready.</p>
-                
-                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left;">
-                    <h3 style="margin-bottom: 15px; color: var(--primary);">💬 What can I help you with?</h3>
-                    
-                    <div style="margin: 15px 0;">
-                        <p style="margin: 10px 0;">Ask me anything about your documents:</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• "Summarize this document"</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• "What are the main topics?"</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• "Explain [concept] from my notes"</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• "Find information about [topic]"</p>
-                    </div>
+                <div class="welcome-icon"><i class="fas fa-comments"></i></div>
+                <h2>Ready to chat</h2>
+                <p>You have <strong>${window.documents.length} document${window.documents.length > 1 ? 's' : ''}</strong> uploaded and ready. Ask me anything about them.</p>
+
+                <div class="welcome-branding" style="text-align: left;">
+                    <p style="margin: 6px 0; color: var(--text-secondary);">Try questions like:</p>
+                    <p style="margin: 6px 0; color: var(--text-muted);">• "Summarize this document"</p>
+                    <p style="margin: 6px 0; color: var(--text-muted);">• "What are the main topics?"</p>
+                    <p style="margin: 6px 0; color: var(--text-muted);">• "Explain a concept from my notes"</p>
+                    <p style="margin: 6px 0; color: var(--text-muted);">• "Find information about a specific topic"</p>
                 </div>
-                
-                <p style="margin-top: 20px; font-size: 0.9em; color: var(--text-muted);">
-                    🤖 <strong>Powered by Anthony</strong> - I'll search through your documents and provide detailed answers!
-                </p>
             </div>
         `;
     } else {
         // No documents - show upload instructions
         messagesContainer.innerHTML = `
             <div class="welcome-message">
-                <div class="welcome-icon">📚</div>
-                <h2>Welcome to AI Document Chat!</h2>
-                <p style="font-size: 1.1em; margin: 20px 0; color: #f39c12;"><strong>⚠️ You need to upload documents first!</strong></p>
-                
-                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left; border-left: 4px solid var(--primary);">
-                    <h3 style="margin-bottom: 15px; color: var(--primary);">🚀 Getting Started (2 Easy Steps):</h3>
-                    
-                    <div style="margin: 15px 0; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
-                        <strong style="color: var(--primary); font-size: 1.1em;">✅ STEP 1: Upload Your Documents</strong>
-                        <p style="margin: 10px 0 5px 0;">Click the <strong>"📤" Upload button</strong> at the top-left corner</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• PDFs, Word files, Text files, or Images</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• You can upload up to 5 files at once</p>
-                    </div>
-                    
-                    <div style="margin: 15px 0; padding: 15px; background: rgba(46, 204, 113, 0.1); border-radius: 8px;">
-                        <strong style="color: var(--success); font-size: 1.1em;">✅ STEP 2: Start Chatting</strong>
-                        <p style="margin: 10px 0 5px 0;">After upload, type your question and press Enter!</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• Ask about document content</p>
-                        <p style="font-size: 0.9em; color: var(--text-muted);">• Get summaries and explanations</p>
-                    </div>
+                <div class="welcome-icon"><i class="fas fa-file-import"></i></div>
+                <h2>Welcome to Document Chat</h2>
+                <p>Upload a document first, then ask questions about its content.</p>
+
+                <div class="welcome-branding" style="text-align: left;">
+                    <p style="margin: 8px 0;"><strong style="color: var(--primary);">Step 1 — Upload documents</strong></p>
+                    <p style="margin: 6px 0; color: var(--text-secondary);">Click the upload button in the top-left corner.</p>
+                    <p style="margin: 4px 0; color: var(--text-muted);">• PDF, Word, text files, or images</p>
+                    <p style="margin: 4px 0; color: var(--text-muted);">• Up to 5 files at once</p>
+
+                    <p style="margin: 14px 0 8px;"><strong style="color: var(--primary);">Step 2 — Start chatting</strong></p>
+                    <p style="margin: 6px 0; color: var(--text-secondary);">Type your question and press Enter.</p>
                 </div>
-                
+
                 <div class="quick-actions">
-                    <button class="quick-action" onclick="document.getElementById('uploadBtn').click()" style="background: var(--primary); color: white; font-weight: bold; padding: 15px 30px; font-size: 16px;">
-                        <i class="fas fa-upload"></i>
-                        📤 Upload Documents Now
+                    <button class="quick-action" onclick="document.getElementById('uploadBtn').click()">
+                        <i class="fas fa-upload"></i> Upload documents now
                     </button>
                 </div>
-                
-                <p style="margin-top: 20px; font-size: 0.9em; color: #e74c3c; font-weight: bold;">
-                    ⚠️ <strong>IMPORTANT:</strong> Chat is disabled until you upload at least one document!
-                </p>
             </div>
         `;
     }
 }
 
 function scrollToBottom() {
-    const messagesContainer = document.getElementById('chatMessages');
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    scheduleScrollToBottom();
 }
 
 function sendSampleQuestion() {
@@ -684,8 +737,7 @@ function sendSampleQuestion() {
     input.focus();
     
     // Trigger auto-resize
-    input.style.height = 'auto';
-    input.style.height = input.scrollHeight + 'px';
+    scheduleTextareaResize(input);
 }
 
 // Initialize chat when DOM is loaded

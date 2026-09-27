@@ -3,6 +3,7 @@
 import google.generativeai as genai
 from typing import List, Dict, Optional, Iterator
 import json
+import re
 import os
 import time
 import socket
@@ -10,11 +11,71 @@ import ssl
 import certifi
 import httpx
 import hashlib
+from collections import OrderedDict
 
 from ..config.settings import settings
 from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+# Matches markdown heading markers (#, ##, ### ...) at the start of a line
+_HEADING_MARK_RE = re.compile(r'^\s{0,3}#{1,6}\s*', re.MULTILINE)
+
+# Matches a model-generated "#### ** Sources" / "## References" heading line.
+# The UI renders its own citations block, so anything from this heading onward
+# is cut from the answer.
+_SOURCES_HEADING_RE = re.compile(
+    r'^\s{0,3}(?:#{1,6}\s*\**\s*|\*{1,2}\s*)(?:sources?|references?)\s*\*{0,2}\s*:?\s*$',
+    re.IGNORECASE | re.MULTILINE
+)
+
+# Same check for a single sanitized line (streaming path)
+_BARE_SOURCES_LINE_RE = re.compile(
+    r'^\s*\**\s*(?:sources?|references?)\s*\**\s*:?\s*$',
+    re.IGNORECASE
+)
+
+# Lines containing only markdown emphasis markers (dangling ** or __)
+_LONE_MARKS_RE = re.compile(r'^\s{0,3}(?:\*{1,3}|_{1,3})\s*$', re.MULTILINE)
+
+# Space left in front of punctuation after a citation is removed
+_SPACE_BEFORE_PUNCT_RE = re.compile(r'\s+([.,;:])')
+
+# Honest message used whenever the LLM cannot be reached. It must NOT look
+# like an answer about the user's documents.
+SERVICE_UNAVAILABLE_MESSAGE = (
+    "The AI service is temporarily unavailable. "
+    "Please try again in a moment."
+)
+
+
+class LLMUnavailableError(RuntimeError):
+    """Raised when the LLM could not produce an answer (outage, quota, network).
+
+    Callers must not substitute fabricated text or raw document excerpts:
+    they should report the outage honestly to the client.
+    """
+
+
+def sanitize_answer(text: str) -> str:
+    """Clean LLM output for professional chat rendering.
+
+    - Cuts everything from a "Sources" / "References" heading onward
+      (the UI displays citations itself, see chat.js message-sources).
+    - Strips markdown heading markers (#, ##, ###) from remaining lines.
+    - Removes dangling emphasis markers (lone ** lines).
+    - Keeps inline [Source N] citations so every claim stays traceable.
+    """
+    if not text:
+        return text
+    cut = _SOURCES_HEADING_RE.search(text)
+    if cut:
+        text = text[:cut.start()].rstrip()
+    text = _HEADING_MARK_RE.sub('', text)
+    text = _LONE_MARKS_RE.sub('', text)
+    text = _SPACE_BEFORE_PUNCT_RE.sub(r'\1', text)
+    text = re.sub(r' {2,}', ' ', text)
+    return text
 
 
 class LLMService:
@@ -23,6 +84,8 @@ class LLMService:
     def __init__(self):
         """Initialize Gemini client and Redis cache"""
         self.client = None
+        self.deepseek_client = None
+        self._use_deepseek = False
         self.api_key = None
         self.network_available = True
         self.last_network_check = 0
@@ -45,41 +108,61 @@ class LLMService:
             except Exception as e:
                 logger.warning(f"Redis cache unavailable: {e}")
                 self.redis_client = None
+        
+        # In-process answer cache used when Redis is unavailable (bounded, TTL'd)
+        self._local_answers: "OrderedDict[str, tuple]" = OrderedDict()
+        self._local_answer_max = 256
     
     def _get_cache_key(self, question: str, context_summary: str) -> str:
         """Generate cache key from question and context"""
         content = f"{question}:{context_summary}"
-        return f"llm_answer:{hashlib.md5(content.encode()).hexdigest()}"
+        # v2: invalidates answers cached before the citation/sources sanitizer
+        return f"llm_answer:v2:{hashlib.md5(content.encode()).hexdigest()}"
     
     def _get_cached_answer(self, cache_key: str) -> Optional[str]:
-        """Get cached answer if available"""
-        if not self.redis_client:
-            return None
+        """Get cached answer if available (Redis first, then in-process)."""
+        if self.redis_client:
+            try:
+                cached = self.redis_client.get(cache_key)
+                if cached:
+                    logger.info("✓ Cache HIT (Redis) - Returning cached answer")
+                    # Defense-in-depth: sanitize cached answers too, in case a
+                    # stale entry slipped through an older version
+                    return sanitize_answer(cached)
+            except Exception as e:
+                logger.warning(f"Cache read error: {e}")
         
-        try:
-            cached = self.redis_client.get(cache_key)
-            if cached:
-                logger.info("✓ Cache HIT - Returning cached answer")
-                return cached
-        except Exception as e:
-            logger.warning(f"Cache read error: {e}")
+        # In-process fallback: caching must work without Redis too
+        entry = self._local_answers.get(cache_key)
+        if entry:
+            answer, stored_at = entry
+            if time.time() - stored_at <= settings.cache_ttl:
+                self._local_answers.move_to_end(cache_key)
+                logger.info("✓ Cache HIT (in-process) - Returning cached answer")
+                return sanitize_answer(answer)
+            del self._local_answers[cache_key]
         
         return None
     
     def _cache_answer(self, cache_key: str, answer: str):
-        """Cache the answer"""
-        if not self.redis_client:
-            return
+        """Cache the answer (Redis when available, in-process otherwise)."""
+        if self.redis_client:
+            try:
+                self.redis_client.setex(
+                    cache_key,
+                    settings.cache_ttl,  # TTL from settings (default 3600s = 1 hour)
+                    answer
+                )
+                logger.info("✓ Answer cached for future requests (Redis)")
+                return
+            except Exception as e:
+                logger.warning(f"Cache write error: {e}")
         
-        try:
-            self.redis_client.setex(
-                cache_key,
-                settings.cache_ttl,  # TTL from settings (default 3600s = 1 hour)
-                answer
-            )
-            logger.info("✓ Answer cached for future requests")
-        except Exception as e:
-            logger.warning(f"Cache write error: {e}")
+        self._local_answers[cache_key] = (answer, time.time())
+        self._local_answers.move_to_end(cache_key)
+        while len(self._local_answers) > self._local_answer_max:
+            self._local_answers.popitem(last=False)
+        logger.info("Answer cached for future requests (in-process)")
     
     def _create_http_client(self) -> httpx.Client:
         """
@@ -126,7 +209,7 @@ class LLMService:
     
     def _check_network_connectivity(self) -> bool:
         """
-        Check if network connection to Google API is available
+        Check if network connection to the LLM API is available
         
         Returns:
             True if network is reachable
@@ -139,8 +222,12 @@ class LLMService:
         self.last_network_check = current_time
         
         try:
-            # Try to resolve Google's API endpoint
-            socket.create_connection(("generativelanguage.googleapis.com", 443), timeout=5)
+            # Check the active provider's API endpoint
+            host = (
+                "api.deepseek.com" if self._use_deepseek
+                else "generativelanguage.googleapis.com"
+            )
+            socket.create_connection((host, 443), timeout=5)
             self.network_available = True
             logger.info("Network connectivity check: OK")
             return True
@@ -179,8 +266,20 @@ class LLMService:
                 ]
                 
                 is_retryable = any(err in error_str for err in retryable_errors)
+                # Quota/rate-limit errors (HTTP 429) are retryable too, but the
+                # sleep must honour the provider's per-minute limits (60s).
+                is_quota = ('429' in error_str or 'quota' in error_str
+                            or 'rate limit' in error_str)
+                if is_quota:
+                    delay = 60
                 
-                if is_retryable and attempt < max_retries - 1:
+                if (is_retryable or is_quota) and attempt < max_retries - 1:
+                    # Don't spin forever waiting out a quota window
+                    if is_quota and attempt >= 2:
+                        logger.error(
+                            f"Quota error persists after {attempt + 1} attempts: {str(e)}"
+                        )
+                        raise e
                     logger.warning(f"Retryable error on attempt {attempt + 1}/{max_retries}: {str(e)}. Retrying in {delay}s...")
                     time.sleep(delay)
                     delay *= 2  # Exponential backoff
@@ -198,7 +297,7 @@ class LLMService:
                     continue
                 
                 # For non-retryable errors or last attempt, raise
-                if not is_retryable:
+                if not (is_retryable or is_quota):
                     logger.error(f"Non-retryable error: {str(e)}")
                 raise e
         
@@ -206,12 +305,49 @@ class LLMService:
         raise last_error
     
     def initialize(self):
-        """Configure Gemini API"""
-        if self.client is not None:
+        """Configure the LLM provider(s).
+
+        Text generation (answers, summaries, query transformation) uses the
+        provider selected by settings.llm_provider. Gemini remains available
+        for image captioning (vision) whenever a Gemini key is present.
+        """
+        if self.client is not None or self.deepseek_client is not None:
             return
         
         self.api_key = settings.get_api_key()
         
+        if settings.llm_provider == "deepseek":
+            if not settings.deepseek_api_key:
+                raise ValueError(
+                    "DeepSeek API key not found. Please set DEEPSEEK_API_KEY in .env file"
+                )
+            
+            logger.info(f"Initializing DeepSeek API (model: {settings.deepseek_model})...")
+            try:
+                from openai import OpenAI
+                
+                self.deepseek_client = OpenAI(
+                    api_key=settings.deepseek_api_key,
+                    base_url=settings.deepseek_base_url,
+                )
+                self._use_deepseek = True
+                logger.info("DeepSeek client ready")
+            except Exception as e:
+                logger.error(f"Failed to configure DeepSeek API: {e}")
+                raise
+            
+            # Gemini (vision) stays available for image captioning
+            if self.api_key:
+                try:
+                    os.environ['GOOGLE_API_KEY'] = self.api_key
+                    genai.configure(api_key=self.api_key)
+                    self.client = genai
+                    logger.info("Gemini vision configured (image captioning fallback)")
+                except Exception as e:
+                    logger.warning(f"Gemini vision not configured: {e}")
+            return
+        
+        # Default: Gemini for everything
         if not self.api_key:
             raise ValueError(
                 "Gemini API key not found. Please set GEMINI_API_KEY or GOOGLE_API_KEY in .env file"
@@ -226,10 +362,25 @@ class LLMService:
         try:
             genai.configure(api_key=self.api_key)
             self.client = genai  # Store reference to the module for compatibility
+            self._use_deepseek = False
             logger.info(f"Gemini API initialized with model: {settings.gemini_model}")
         except Exception as e:
             logger.error(f"Failed to configure Gemini API: {e}")
             raise
+    
+    def _deepseek_chat(self, prompt: str, temperature=None, max_tokens=None, stream=False):
+        """Call the DeepSeek chat completions API (OpenAI-compatible)."""
+        kwargs = {
+            "model": settings.deepseek_model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if stream:
+            kwargs["stream"] = True
+        return self.deepseek_client.chat.completions.create(**kwargs)
     
     def generate_answer(
         self,
@@ -239,7 +390,7 @@ class LLMService:
         strict_mode: bool = False
     ) -> str:
         """
-        Generate answer using Gemini with SUPER INTERACTIVE mode + CACHING
+        Generate answer using Gemini, grounded strictly in the provided context + CACHING
         
         Args:
             question: User's question
@@ -248,7 +399,7 @@ class LLMService:
             strict_mode: If True, only answer from provided context (for document-only mode)
         
         Returns:
-            Generated answer - ALWAYS helpful and educational
+            Generated answer - grounded in the context, or the abstain sentence
         """
         self.initialize()
         
@@ -269,17 +420,26 @@ class LLMService:
         # Cache miss - generate new answer
         logger.info("Cache MISS - Generating new answer...")
         
-        # Check network connectivity first
-        if not self._check_network_connectivity():
-            logger.error("No network connectivity to Google API")
-            return self._generate_offline_response(question, context_chunks)
+        # Pre-flight network check: only for the Gemini path. The DeepSeek
+        # client fails fast on its own (and is retried below).
+        if not self._use_deepseek and not self._check_network_connectivity():
+            logger.error("No network connectivity to the LLM API")
+            raise LLMUnavailableError("no network connectivity to the LLM API")
         
-        # Build SUPER INTERACTIVE prompt
+        # Build the grounded prompt
         prompt = self._build_prompt(question, context, chat_history, strict_mode)
         
         try:
             # Generate response with retry logic
             def _generate():
+                if self._use_deepseek:
+                    resp = self._deepseek_chat(
+                        prompt,
+                        temperature=settings.gemini_temperature,
+                        max_tokens=settings.gemini_max_tokens,
+                    )
+                    return resp.choices[0].message.content or ""
+                
                 model = genai.GenerativeModel(settings.gemini_model)
                 
                 # SPEED OPTIMIZATION: Configure generation for faster responses
@@ -298,6 +458,9 @@ class LLMService:
             
             answer = self._retry_with_backoff(_generate, max_retries=5, initial_delay=2)
             
+            # Sanitize: strip markdown headings (###) for professional rendering
+            answer = sanitize_answer(answer)
+            
             # Cache the answer for future requests
             self._cache_answer(cache_key, answer)
             
@@ -306,22 +469,18 @@ class LLMService:
         
         except Exception as e:
             logger.error(f"Error generating answer: {str(e)}")
-            error_str = str(e).lower()
-            
-            # Check if it's a network/SSL/connection error
-            network_errors = [
-                '11001', 'getaddrinfo', 'connection', 'timeout', 'network',
-                'ssl', 'eof occurred', 'unexpected_eof', 'certificate',
-                'handshake', 'protocol'
-            ]
-            
-            if any(err in error_str for err in network_errors):
-                logger.warning("Network/SSL error detected, providing offline response")
-                return self._generate_offline_response(question, context_chunks)
-            
-            # For other errors, provide intelligent fallback
-            return self._generate_intelligent_fallback(question, context_chunks, error_str)
+            # Never fabricate an answer, and never pass off raw excerpts as
+            # one. Report the outage honestly and let the API layer respond.
+            raise LLMUnavailableError(str(e)) from e
     
+    # ------------------------------------------------------------------
+    # NOTE: _generate_intelligent_fallback() and _generate_offline_response()
+    # below are no longer used by the answer path. Failures now raise
+    # LLMUnavailableError so the API returns an honest "service unavailable"
+    # response instead of passing raw document excerpts off as an answer.
+    # Kept temporarily for reference; safe to delete in a cleanup pass.
+    # ------------------------------------------------------------------
+
     def _generate_intelligent_fallback(self, question: str, context_chunks: List[Dict], error_msg: str) -> str:
         """
         Generate intelligent fallback when AI generation fails
@@ -342,7 +501,7 @@ class LLMService:
 
 **Your Question:** {question}
 
-I encountered a temporary issue connecting to the full Gemini AI, but I found relevant information:
+I encountered a temporary issue connecting to the full AI service, but I found relevant information:
 
 📚 **Relevant Content:**
 
@@ -396,7 +555,7 @@ I'm here to help you learn and understand! 🎓"""
 
 **Your Question:** {question}
 
-⚠️ I'm currently unable to connect to the Gemini AI service due to a network issue. However, I want to help you!
+⚠️ I'm currently unable to connect to the AI service due to a network issue. However, I want to help you!
 
 **What I Can Do:**
 While I can't access my full AI capabilities right now, here's what I recommend:
@@ -439,7 +598,7 @@ Once the connection is restored, I'll be able to give you a complete answer! �
 💡 **Quick Summary:**
 Based on these document excerpts, the information relates to your question about "{question}".
 
-**Note:** Once the Gemini AI connection is restored, I'll be able to provide a much more comprehensive, analyzed answer with:
+**Note:** Once the AI connection is restored, I'll be able to provide a much more comprehensive, analyzed answer with:
 - Detailed explanations
 - Connected concepts
 - Examples and illustrations
@@ -472,10 +631,10 @@ Based on these document excerpts, the information relates to your question about
         
         logger.info(f"Generating streaming answer for: '{question}'")
         
-        # Check network connectivity
-        if not self._check_network_connectivity():
+        # Pre-flight network check (Gemini path only - see generate_answer)
+        if not self._use_deepseek and not self._check_network_connectivity():
             logger.error("No network connectivity for streaming")
-            yield self._generate_offline_response(question, context_chunks)
+            yield SERVICE_UNAVAILABLE_MESSAGE
             return
         
         # Build context and prompt
@@ -483,25 +642,54 @@ Based on these document excerpts, the information relates to your question about
         prompt = self._build_prompt(question, context, chat_history)
         
         try:
-            # Generate streaming response using new SDK
-            model = genai.GenerativeModel(settings.gemini_model)
-            response = model.generate_content(prompt, stream=True)
+            # Produce raw text pieces from the active provider
+            def _text_iterator():
+                if self._use_deepseek:
+                    stream = self._deepseek_chat(
+                        prompt,
+                        temperature=settings.gemini_temperature,
+                        max_tokens=settings.gemini_max_tokens,
+                        stream=True,
+                    )
+                    for chunk in stream:
+                        if chunk.choices:
+                            delta = chunk.choices[0].delta
+                            content = getattr(delta, "content", None)
+                            if content:
+                                yield content
+                else:
+                    model = genai.GenerativeModel(settings.gemini_model)
+                    response = model.generate_content(prompt, stream=True)
+                    for chunk in response:
+                        if hasattr(chunk, 'text') and chunk.text:
+                            yield chunk.text
             
-            for chunk in response:
-                if hasattr(chunk, 'text') and chunk.text:
-                    yield chunk.text
+            # Line-buffered output: heading marks (###) can be split across
+            # chunks, so only complete lines are sanitized and emitted.
+            # Once the model starts writing its own "Sources" section, the
+            # rest of the stream is dropped entirely (the UI shows citations).
+            pending = ""
+            sources_seen = False
+            for piece in _text_iterator():
+                if sources_seen:
+                    break
+                pending += piece
+                lines = pending.split("\n")
+                pending = lines.pop()  # keep possibly-incomplete last line
+                for line in lines:
+                    clean = sanitize_answer(line)
+                    if _BARE_SOURCES_LINE_RE.match(clean):
+                        sources_seen = True
+                        break
+                    yield clean + "\n"
+            if pending and not sources_seen:
+                clean = sanitize_answer(pending)
+                if not _BARE_SOURCES_LINE_RE.match(clean):
+                    yield clean
         
         except Exception as e:
             logger.error(f"Error in streaming generation: {str(e)}")
-            error_str = str(e).lower()
-            
-            # Check if it's a network error
-            if any(err in error_str for err in ['11001', 'getaddrinfo', 'connection', 'timeout', 'network']):
-                logger.warning("Network error during streaming, providing offline response")
-                yield "\n\n⚠️ **Network Error**\n\n"
-                yield self._generate_offline_response(question, context_chunks)
-            else:
-                yield f"\n\n[Error: {str(e)}]"
+            yield SERVICE_UNAVAILABLE_MESSAGE
     
     def _build_context(self, chunks: List[Dict]) -> str:
         """Build context string from chunks"""
@@ -527,134 +715,45 @@ Based on these document excerpts, the information relates to your question about
         chat_history: Optional[List[Dict]] = None,
         strict_mode: bool = False
     ) -> str:
-        """Build prompt for Gemini - SUPER INTERACTIVE MODE"""
+        """Build the prompt for Gemini - document-grounded, honest mode.
+
+        The model answers ONLY from the provided context chunks. If the
+        context does not contain the answer it must return the abstain
+        sentence, never a general-knowledge guess.
+        """
         
-        if strict_mode:
-            # Get branding info
-            from app.config.settings import settings
-            author_name = settings.app_author
-            
-            system_message = f"""You are a highly intelligent AI teaching assistant created by {author_name}.
+        system_message = """You are a document question-answering assistant.
 
-🎯 YOUR MISSION:
-Help students learn, understand, and discover knowledge through intelligent conversation.
+YOUR ONLY JOB: answer the user's question using ONLY the DOCUMENT CONTEXT
+provided below. You are not a general chatbot.
 
-📚 DOCUMENT-FIRST APPROACH:
-1. If documents are provided, analyze them thoroughly and answer from the content
-2. Cite sources: [Source N] when using document information
-3. If documents don't contain the answer but are related, acknowledge what's in the documents first
+GROUNDING RULES (STRICTLY ENFORCED):
+1. Use only facts that appear in the DOCUMENT CONTEXT. Never add facts from
+   outside knowledge or from your training data - even if you are sure.
+2. REASONING OVER THE CONTEXT IS ALLOWED AND EXPECTED. You may count, total,
+   compare, rank and draw conclusions that follow directly from those facts.
+   Example: if the context shows "Physics A1, Chemistry B2, Biology B3", you
+   may say the science results are strong and explain why.
+   Never present an inference as though the document itself stated it.
+3. If a conclusion needs information the context does not contain (for example
+   an institution's admission requirements), give what the context does
+   support, then say plainly that the documents do not state the rest.
+4. Only when the context contains nothing relevant to the question, reply with
+   exactly this sentence and nothing else: I couldn't find that in your documents.
+5. Cite the source of every factual claim inline as [Source N], e.g.
+   "The warranty is 3 years [Source 2]."
+6. Never speculate about things the context does not mention, and never invent
+   numbers, dates, names, grades or codes.
+7. If no DOCUMENT CONTEXT is provided, reply with exactly the abstain sentence.
 
-🧠 INTELLIGENT ASSISTANCE:
-Even if information isn't in documents:
-- Provide educational explanations and context
-- Break down complex topics simply
-- Offer examples and analogies
-- Guide students to understanding
-- Suggest related topics to explore
-
-💬 INTERACTION STYLE:
-- Be conversational and engaging
-- Ask clarifying questions when needed
-- Encourage critical thinking
-- Provide step-by-step explanations
-- Use examples to illustrate points
-- Be supportive and encouraging
-
-❌ NEVER SAY:
-- "I don't have information about this"
-- "This is not available"
-- "I can't help with that"
-
-✅ INSTEAD DO:
-- "Let me explain this concept..."
-- "Based on what I know about this topic..."
-- "Here's how this works..."
-- "Let me break this down for you..."
-
-"""
-        else:
-            # Get branding info
-            from app.config.settings import settings
-            author_name = settings.app_author
-            branded_name = settings.branded_name
-            branding_style = settings.branding_style
-            
-            # Create intro based on branding style
-            if branding_style == "professional":
-                intro = f"I'm {author_name}'s AI assistant"
-            else:
-                intro = f"I'm {branded_name}, powered by {author_name}"
-            
-            system_message = f"""You are an EXTREMELY INTELLIGENT and HELPFUL AI assistant created by {author_name}.
-
-👋 INTRODUCTION:
-{intro}, here to help you with document analysis and any questions you have.
-
-🌟 YOUR SUPERPOWER:
-You are a knowledge expert that can help with ANYTHING - whether from uploaded documents or your vast training knowledge.
-
-🎯 DUAL-MODE OPERATION:
-
-**MODE 1: Document-Based (If context provided)**
-- Analyze documents thoroughly
-- Extract key information
-- Cite sources [Source N]
-- Connect document content to the question
-
-**MODE 2: General Knowledge (Always available)**
-- Explain concepts clearly
-- Provide educational content
-- Answer research questions
-- Help with homework and learning
-- Offer examples and illustrations
-- Break down complex topics
-
-💡 INTERACTION PRINCIPLES:
-
-1. **Always Be Helpful**: Never refuse to answer. Always try to assist.
-
-2. **Be Educational**: Explain concepts, don't just answer. Help students LEARN.
-
-3. **Be Engaging**: Use examples, analogies, and clear language.
-
-4. **Be Thorough**: Provide comprehensive answers with context.
-
-5. **Be Smart**: 
-   - If documents exist: Use them + your knowledge
-   - If no documents: Use your vast knowledge
-   - If unclear: Ask clarifying questions
-
-6. **Be Interactive**:
-   - "Let me explain..."
-   - "Here's what you need to know..."
-   - "Think of it this way..."
-   - "For example..."
-
-❌ FORBIDDEN PHRASES:
-- "I don't have enough information"
-- "I can't help with that"
-- "This is not available"
-- "I don't know"
-
-✅ POWER PHRASES:
-- "Great question! Let me explain..."
-- "Here's a comprehensive answer..."
-- "Based on my knowledge..."
-- "Let me break this down..."
-- "Here's what's interesting about this..."
-- "To help you understand..."
-
-🎓 SUBJECT AREAS YOU MASTER:
-- Science, Math, Technology
-- History, Literature, Arts
-- Programming, Data Science
-- Business, Economics
-- Languages, Writing
-- Research Methods
-- Study Skills
-- And literally everything else!
-
-Remember: You're an advanced AI assistant created by {author_name}. Use that power to EDUCATE and ASSIST fearlessly!
+FORMATTING RULES:
+1. NEVER use markdown headings (#, ##, ###, ####). Start directly with your answer.
+2. Write in plain paragraphs, short bullet lists (- item), and bold (**text**)
+   for emphasis only. No emojis inside answers.
+3. NEVER add a "Sources", "References", or "Bibliography" section at the end.
+   Inline [Source N] markers are enough.
+4. Never paste document excerpts back into your answer, and never leave
+   dangling ** or __ marks alone on a line.
 
 """
         
@@ -680,9 +779,9 @@ Remember: You're an advanced AI assistant created by {author_name}. Use that pow
         prompt = f"""{system_message}
 {history_text}
 {context_section}
-❓ STUDENT'S QUESTION: {question}
+QUESTION: {question}
 
-💬 YOUR COMPREHENSIVE, HELPFUL RESPONSE:
+ANSWER:
 """
         
         return prompt
@@ -828,6 +927,13 @@ Format your response clearly with these sections. Be specific and detailed."""
         
         try:
             def _generate_summary():
+                if self._use_deepseek:
+                    resp = self._deepseek_chat(
+                        prompt,
+                        temperature=0.3,
+                        max_tokens=settings.gemini_max_tokens,
+                    )
+                    return resp.choices[0].message.content or ""
                 model = genai.GenerativeModel(settings.gemini_model)
                 response = model.generate_content(prompt)
                 return response.text
@@ -901,9 +1007,13 @@ Current Question: {question}
 Rewritten Question (be concise, keep the same meaning):"""
         
         try:
-            model = genai.GenerativeModel(settings.gemini_model)
-            response = model.generate_content(prompt)
-            transformed = response.text.strip()
+            if self._use_deepseek:
+                resp = self._deepseek_chat(prompt, temperature=0.0, max_tokens=100)
+                transformed = (resp.choices[0].message.content or "").strip()
+            else:
+                model = genai.GenerativeModel(settings.gemini_model)
+                response = model.generate_content(prompt)
+                transformed = response.text.strip()
             
             logger.info(f"Transformed query: '{transformed}'")
             return transformed

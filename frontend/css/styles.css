@@ -936,7 +936,7 @@ body::after {
     font-family: inherit;
     resize: none;
     max-height: 150px;
-    transition: var(--transition);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 #messageInput:focus {
@@ -1021,6 +1021,11 @@ kbd {
     padding: 60px 30px;
     border: 3px dashed var(--border);
     border-radius: var(--radius);
+.chat-input-container.glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--shadow-sm);
+}
     transition: var(--transition);
 }
 
@@ -2704,4 +2709,65 @@ kbd {
     .author-links a {
         min-width: auto;
     }
+}
+
+/* ==================== Performance Mode ==================== */
+body.performance-mode::before,
+body.performance-mode::after {
+    display: none;
+}
+
+body.performance-mode .glass,
+body.performance-mode .modal,
+body.performance-mode .toast,
+body.performance-mode .chat-header,
+body.performance-mode .sidebar,
+body.performance-mode .chat-input-container,
+body.performance-mode .sidebar-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+body.performance-mode .glass {
+    box-shadow: var(--shadow-sm);
+}
+
+body.performance-mode .gradient-text,
+body.performance-mode .progress-fill,
+body.performance-mode .typing-dot,
+body.performance-mode .toast,
+body.performance-mode .message,
+body.performance-mode .document-item,
+body.performance-mode .btn,
+body.performance-mode .quick-action {
+    animation: none;
+}
+
+body.performance-mode .btn,
+body.performance-mode .document-item,
+body.performance-mode .message,
+body.performance-mode .message-content,
+body.performance-mode .quick-action,
+body.performance-mode .doc-delete-btn,
+body.performance-mode .doc-view-btn,
+body.performance-mode .speaker-btn,
+body.performance-mode .file-preview-item,
+body.performance-mode .branding-links a,
+body.performance-mode .author-links a {
+    transition: none;
+}
+
+body.performance-mode .btn:hover,
+body.performance-mode .document-item:hover,
+body.performance-mode .message:hover,
+body.performance-mode .message-content:hover,
+body.performance-mode .quick-action:hover,
+body.performance-mode .doc-delete-btn:hover,
+body.performance-mode .doc-view-btn:hover,
+body.performance-mode .speaker-btn:hover,
+body.performance-mode .file-preview-item:hover,
+body.performance-mode .branding-links a:hover,
+body.performance-mode .author-links a:hover {
+    box-shadow: none;
+    transform: none;
 }

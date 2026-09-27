@@ -1,16 +1,38 @@
 """Pydantic models for request/response validation"""
 
+import re
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 
 
 # User Models
 class UserCreate(BaseModel):
     """User registration request"""
-    username: str = Field(..., min_length=3, max_length=50)
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=30,
+        pattern=r"^[a-zA-Z0-9_.-]+$",
+        description="3-30 characters; letters, numbers, dots, underscores, hyphens"
+    )
     email: EmailStr
-    password: str = Field(..., min_length=6)
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=72,
+        description="8-72 characters with at least one letter and one number"
+    )
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        """Enforce a standard password policy (bcrypt accepts up to 72 bytes)."""
+        if not re.search(r"[A-Za-z]", v):
+            raise ValueError("Password must contain at least one letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Password must contain at least one number")
+        return v
 
 
 class UserLogin(BaseModel):
@@ -55,6 +77,20 @@ class DocumentResponse(BaseModel):
     summary: Optional[str] = None  # AI-generated summary of document content
 
 
+class IngestionJobStatus(BaseModel):
+    """Ingestion job status response"""
+    job_id: str
+    user_id: int
+    filename: str
+    status: str
+    progress: int = 0
+    message: Optional[str] = None
+    error: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime] = None
+
+
 # Question & Answer Models
 class QuestionRequest(BaseModel):
     """Basic question request"""
@@ -76,6 +112,12 @@ class AnswerResponse(BaseModel):
     answer: str
     sources: List[Source]
     question: str
+    # True when the LLM call failed and this is NOT a document-grounded
+    # answer (the AI service was unreachable). Clients should treat it as a
+    # service error, not as an answer about the documents.
+    degraded: bool = False
+    # True when the answer was served from the semantic cache.
+    cached: bool = False
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 

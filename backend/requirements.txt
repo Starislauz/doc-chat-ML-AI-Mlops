@@ -15,6 +15,7 @@ chromadb
 
 # AI & ML
 google-generativeai
+openai  # DeepSeek client (OpenAI-compatible API)
 
 # PyTorch CPU-ONLY (NO CUDA!) - This forces the small download!
 --extra-index-url https://download.pytorch.org/whl/cpu
